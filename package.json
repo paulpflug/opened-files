@@ -1,0 +1,20 @@
+{
+  "name": "opened-files",
+  "main": "./lib/opened-files",
+  "version": "0.0.0",
+  "description": "A short description of your package",
+  "keywords": [],
+  "repository": "https://github.com/atom/opened-files",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=0.174.0 <2.0.0"
+  },
+  "dependencies": {
+    "atom-vue-component-loader": "0.0.2",
+    "lazy.js": "^0.4.0"
+  },
+  "devDependencies": {
+    "simple-reload": "0.0.2",
+    "atom-vue-component-compiler": "0.0.1"
+  }
+}

@@ -1,0 +1,18 @@
+'menu': [
+  {
+    'label': 'Packages'
+    'submenu': [
+      'label': 'Opened Files'
+      'submenu': [
+        {
+          'label': 'Toggle'
+          'command': 'opened-files:toggle'
+        }
+        {
+          'label': 'Close all but pinned'
+          'command': 'opened-files:close-all-but-pinned'
+        }
+      ]
+    ]
+  }
+]
