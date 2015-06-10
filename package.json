@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "description": "A view of all opened files and other useful additions",
   "keywords": [],
-  "repository": "https://github.com/atom/opened-files",
+  "repository": "https://github.com/paulpflug/opened-files",
   "license": "MIT",
   "engines": {
     "atom": ">=0.174.0 <2.0.0"
