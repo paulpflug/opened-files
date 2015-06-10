@@ -1,47 +1,83 @@
-var __vue_template__ = "<div>\n  <ol class=\"tree-view full-menu list-tree has-collapsable-children focusable-panel\">\n    <template is=\"tree-view-directory\" v-component=\"tree-entry\" v-repeat=\"entry: filesTree\" track-by=\"name\" class=\"directory entry list-nested-item project-root\">\n    </template>\n  </ol>\n</div>";
-var Lazy, recursiveAdd, recursiveRemove;
+var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\">\n      <template v-component=\"folder\" v-repeat=\"entry: filesTree\" track-by=\"name\" class=\"directory list-nested-item project-root\">\n      </template>\n    </ol>\n<div class=\"hr icon\" v-class=\"icon-triangle-up:expanded,icon-triangle-down:!expanded\" v-on=\"click:toggle\"></div>";
+var CompositeDisposable, Lazy, addFileToTree, addFolderToTree, getElementFromTree, log, projectManager, removeFileFromTree, removeFolderFromTree, settings;
 
-Lazy = require("lazy.js");
+Lazy = null;
 
-recursiveAdd = function(tree, names, path) {
+log = null;
+
+CompositeDisposable = null;
+
+projectManager = null;
+
+settings = null;
+
+getElementFromTree = function(tree, name, createElement) {
   var element;
-  if (names.length > 0) {
-    element = Lazy(tree).where({
-      name: names[0]
-    }).first();
-    if (!element) {
-      element = {
-        name: names[0],
-        children: []
-      };
+  element = Lazy(tree).where({
+    name: name
+  }).first();
+  if (createElement != null) {
+    if (element == null) {
+      element = createElement();
       tree.push(element);
       tree = Lazy(tree).sortBy("name").toArray();
     }
-    if (names.length > 1) {
-      element.children = recursiveAdd(element.children, names.splice(1, 1), path);
-    } else {
-      element.path = path;
-      element.pinned = false;
-      element.color = false;
-    }
+  }
+  return [element, tree];
+};
+
+addFileToTree = function(tree, name, path) {
+  var element, ref;
+  ref = getElementFromTree(tree, name, function() {
+    var color, pinned, ref, ref1, ref2, ref3;
+    pinned = (ref = (ref1 = settings[path]) != null ? ref1.pinned : void 0) != null ? ref : false;
+    color = (ref2 = (ref3 = settings[path]) != null ? ref3.color : void 0) != null ? ref2 : false;
+    return {
+      name: name,
+      path: path,
+      pinned: pinned,
+      color: color
+    };
+  }), element = ref[0], tree = ref[1];
+  return tree;
+};
+
+addFolderToTree = function(tree, splittedPath, path) {
+  var element, ref;
+  ref = getElementFromTree(tree, splittedPath[0], function() {
+    return {
+      name: splittedPath[0],
+      folders: [],
+      files: []
+    };
+  }), element = ref[0], tree = ref[1];
+  if (splittedPath.length === 2) {
+    element.files = addFileToTree(element.files, splittedPath[1], path);
+  } else {
+    element.folders = addFolderToTree(element.folders, splittedPath.slice(1), path);
   }
   return tree;
 };
 
-recursiveRemove = function(tree, names) {
-  var element;
-  if (names.length > 0) {
-    element = Lazy(tree).where({
-      name: names[0]
-    }).first();
-    if (element != null) {
-      if (names.length > 1 && element.children.length > 0) {
-        element.children = recursiveRemove(element.children, names.splice(1, 1));
-      }
-      if (element.children.length === 0) {
-        tree.$remove(element);
-      }
-    }
+removeFileFromTree = function(tree, name) {
+  var element, ref;
+  ref = getElementFromTree(tree, name), element = ref[0], tree = ref[1];
+  if ((element != null) && !element.pinned) {
+    tree.$remove(element);
+  }
+  return tree;
+};
+
+removeFolderFromTree = function(tree, splittedPath) {
+  var element, ref;
+  ref = getElementFromTree(tree, splittedPath[0]), element = ref[0], tree = ref[1];
+  if (splittedPath.length === 2) {
+    element.files = removeFileFromTree(element.files, splittedPath[1]);
+  } else {
+    element.folders = removeFolderFromTree(element.folders, splittedPath.slice(1));
+  }
+  if (element.folders.length === 0 && element.files.length === 0) {
+    tree.$remove(element);
   }
   return tree;
 };
@@ -49,12 +85,28 @@ recursiveRemove = function(tree, names) {
 module.exports = {
   data: function() {
     return {
-      filesTree: []
+      filesTree: [],
+      disposables: null,
+      expanded: false
     };
   },
   methods: {
+    toggle: function(e) {
+      var treeView;
+      this.expanded = !this.expanded;
+      treeView = document.querySelector("div.tree-view-resizer>div.tree-view-scroller");
+      this.$el;
+      if (this.expanded) {
+        this.$el.setAttribute("style", "height:50%;");
+        treeView.setAttribute("style", "height:50%;");
+      } else {
+        this.$el.removeAttribute("style");
+        treeView.removeAttribute("style");
+      }
+      return e.stopPropagation();
+    },
     addFile: function(path) {
-      var result, rootElement, rootName;
+      var result, rootElement, rootName, splittedPath;
       result = atom.project.relativizePath(path);
       if ((result != null ? result[0] : void 0) != null) {
         rootName = result[0].split("/").pop();
@@ -65,16 +117,22 @@ module.exports = {
           rootElement = {
             name: rootName,
             path: result[0],
-            children: []
+            folders: [],
+            files: []
           };
           this.filesTree.push(rootElement);
           this.filesTree = Lazy(this.filesTree).sortBy("name").toArray();
         }
-        return rootElement.children = recursiveAdd(rootElement.children, result[1].split("/"), path);
+        splittedPath = result[1].split("/");
+        if (splittedPath.length === 1) {
+          return rootElement.files = addFileToTree(rootElement.files, splittedPath[0], path);
+        } else {
+          return rootElement.folders = addFolderToTree(rootElement.folders, splittedPath, path);
+        }
       }
     },
     removeFile: function(path) {
-      var result, rootElement, rootName;
+      var result, rootElement, rootName, splittedPath;
       result = atom.project.relativizePath(path);
       if ((result != null ? result[0] : void 0) != null) {
         rootName = result[0].split("/").pop();
@@ -82,50 +140,87 @@ module.exports = {
           name: rootName
         }).first();
         if (rootElement != null) {
-          rootElement.children = recursiveRemove(rootElement.children, result[1].split("/"));
-        }
-        if ((rootElement != null) && rootElement.children.length === (0 != null)) {
-          return this.filesTree.$remove(rootElement);
+          splittedPath = result[1].split("/");
+          if (splittedPath.length === 1) {
+            rootElement.files = removeFileFromTree(rootElement.files, splittedPath[0]);
+          } else {
+            rootElement.folders = removeFolderFromTree(rootElement.folders, splittedPath);
+          }
+          if (rootElement.folders.length === 0 && rootElement.files.length === 0) {
+            return this.filesTree.$remove(rootElement);
+          }
         }
       }
     },
-    getUnpinned: function() {
-      var child, getUnpinned, i, j, len, len1, ref, ref1, results, rootElement;
-      results = [];
-      getUnpinned = function(entry) {
-        var child, i, len, ref, results1;
-        if (entry.children.length === 0) {
-          if (!entry.pinned) {
-            return results.push(entry.path);
-          }
-        } else {
-          ref = entry.children;
-          results1 = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            child = ref[i];
-            results1.push(getUnpinned(child));
-          }
-          return results1;
-        }
-      };
-      ref = this.filesTree;
-      for (i = 0, len = ref.length; i < len; i++) {
-        rootElement = ref[i];
-        ref1 = rootElement.children;
-        for (j = 0, len1 = ref1.length; j < len1; j++) {
-          child = ref1[j];
-          getUnpinned(child);
-        }
-      }
-      return results;
+    getUnpinned: function(cb) {
+      this.$on("isUnpinned", function(path) {
+        log("recieved " + path);
+        return cb(path);
+      });
+      this.$broadcast("getUnpinned");
+      return setTimeout(((function(_this) {
+        return function() {
+          return _this.$off("isUnpinned");
+        };
+      })(this)), 200);
     }
   },
+  beforeCompile: function() {
+    if (Lazy == null) {
+      Lazy = require("lazy.js");
+    }
+    if (log == null) {
+      log = require("./../lib/log")(atom.inDevMode(), "app-comp");
+    }
+    if (projectManager == null) {
+      projectManager = require("./../lib/project-manager");
+    }
+    settings = projectManager.getProjectSetting();
+    if (CompositeDisposable == null) {
+      CompositeDisposable = require('atom').CompositeDisposable;
+    }
+    return this.disposables = new CompositeDisposable;
+  },
+  beforeDestroy: function() {
+    var ref;
+    return (ref = this.disposables) != null ? ref.dispose() : void 0;
+  },
   created: function() {
-    return this.$on("notifySelect", (function(_this) {
+    this.$on("notifySelect", (function(_this) {
       return function(name) {
+        log("event - selected " + name);
         return _this.$broadcast("selected", name);
       };
     })(this));
+    this.$on("notifyColor", function(path, color) {
+      var newSetting, ref;
+      log("event - color " + path);
+      newSetting = (ref = settings[path]) != null ? ref : {};
+      newSetting.color = color;
+      settings[path] = newSetting;
+      return projectManager.addToProjectSetting(settings, false);
+    });
+    return this.$on("notifyPinned", function(path, pinned) {
+      var newSetting, ref;
+      log("event - (un)pinned " + path);
+      newSetting = (ref = settings[path]) != null ? ref : {};
+      newSetting.pinned = pinned;
+      settings[path] = newSetting;
+      return projectManager.addToProjectSetting(settings, false);
+    });
+  },
+  compiled: function() {
+    var obj, path, results;
+    results = [];
+    for (path in settings) {
+      obj = settings[path];
+      if (obj.pinned) {
+        results.push(this.addFile(path));
+      } else {
+        results.push(void 0);
+      }
+    }
+    return results;
   }
 };
 

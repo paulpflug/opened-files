@@ -5,9 +5,11 @@ log = null
 reload = null
 
 OFView = null
+ImprovedTabs = null
 
 module.exports = new class OpenedFiles
   ofView: null
+  improvedTabs: null
   disposables: null
 
   activate: () ->
@@ -28,6 +30,14 @@ module.exports = new class OpenedFiles
                 @ofView.draw()
               catch
                 log "drawing of opened files failed"
+    unless @improvedTabs?
+      ImprovedTabs ?= require "./improved-tabs.coffee"
+      atom.packages.onDidActivatePackage (p) =>
+        if p.name == "tabs"
+          try
+            @improvedTabs = new ImprovedTabs
+          catch
+            log "loading improved tabs failed"
     @disposables.add atom.commands.add('atom-workspace', {
       'opened-files:toggle': => @ofView.toggle()
     })
@@ -41,6 +51,8 @@ module.exports = new class OpenedFiles
     @disposables.dispose()
     @ofView?.destroy()
     @ofView = null
+    @improvedTabs?.destroy()
+    @improvedTabs = null
 
   serialize: ->
 
@@ -53,7 +65,7 @@ module.exports = new class OpenedFiles
     else
       @redrawing = true
       log "starting redraw"
-      setTimeout (->@redrawing = false), 1000
+      setTimeout (=>@redrawing = false), 1000
     try
       reload ?= require "simple-reload"
     catch
@@ -67,3 +79,6 @@ module.exports = new class OpenedFiles
       @ofView.draw()
       log "finished redraw"
       @redrawing = false
+    @improvedTabs?.destroy()
+    ImprovedTabs = reload "./improved-tabs.coffee"
+    @improvedTabs = new ImprovedTabs
