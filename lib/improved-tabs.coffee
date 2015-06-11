@@ -1,5 +1,6 @@
-
+sep = require("path").sep
 log = require("./log")(atom.inDevMode(),"improved-tabs")
+
 {CompositeDisposable} = require 'atom'
 paths = {}
 
@@ -7,20 +8,20 @@ parsePath = (path) ->
   result = {}
   relativePath = atom.project.relativizePath path
   if relativePath?[0]
-    splitted = relativePath[1].split("/")
+    splitted = relativePath[1].split(sep)
     result.filename = splitted.pop()
     last = ""
     if splitted.length > 0
       last = splitted.pop()
-    last += "/"
+    last += sep
     if splitted.length > 0
-      result.foldername = splitted.map(-> return "...").join("/")+"/"+last
+      result.foldername = splitted.map(-> return "...").join(sep)+sep+last
     else
       result.foldername = last
   else
-    splitted = path.split("/")
+    splitted = path.split(sep)
     result.filename = splitted.pop()
-    result.foldername = "/.../"+splitted.pop()+"/"
+    result.foldername = "#{sep}...#{sep}"+splitted.pop()+sep
   return result
 
 improveAllTabs = ->

@@ -1,9 +1,11 @@
 var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\">\n      <template v-component=\"folder\" v-repeat=\"entry: filesTree\" track-by=\"name\" class=\"directory list-nested-item project-root\">\n      </template>\n    </ol>\n<div class=\"hr icon\" v-class=\"icon-triangle-up:expanded,icon-triangle-down:!expanded\" v-on=\"click:toggle\"></div>";
-var CompositeDisposable, Lazy, addFileToTree, addFolderToTree, getElementFromTree, log, projectManager, removeFileFromTree, removeFolderFromTree, settings;
+var CompositeDisposable, Lazy, addFileToTree, addFolderToTree, getElementFromTree, log, projectManager, removeFileFromTree, removeFolderFromTree, sep, settings;
 
 Lazy = null;
 
 log = null;
+
+sep = null;
 
 CompositeDisposable = null;
 
@@ -109,7 +111,7 @@ module.exports = {
       var result, rootElement, rootName, splittedPath;
       result = atom.project.relativizePath(path);
       if ((result != null ? result[0] : void 0) != null) {
-        rootName = result[0].split("/").pop();
+        rootName = result[0].split(sep).pop();
         rootElement = Lazy(this.filesTree).where({
           name: rootName
         }).first();
@@ -123,7 +125,7 @@ module.exports = {
           this.filesTree.push(rootElement);
           this.filesTree = Lazy(this.filesTree).sortBy("name").toArray();
         }
-        splittedPath = result[1].split("/");
+        splittedPath = result[1].split(sep);
         if (splittedPath.length === 1) {
           return rootElement.files = addFileToTree(rootElement.files, splittedPath[0], path);
         } else {
@@ -135,12 +137,12 @@ module.exports = {
       var result, rootElement, rootName, splittedPath;
       result = atom.project.relativizePath(path);
       if ((result != null ? result[0] : void 0) != null) {
-        rootName = result[0].split("/").pop();
+        rootName = result[0].split(sep).pop();
         rootElement = Lazy(this.filesTree).where({
           name: rootName
         }).first();
         if (rootElement != null) {
-          splittedPath = result[1].split("/");
+          splittedPath = result[1].split(sep);
           if (splittedPath.length === 1) {
             rootElement.files = removeFileFromTree(rootElement.files, splittedPath[0]);
           } else {
@@ -166,6 +168,7 @@ module.exports = {
     }
   },
   beforeCompile: function() {
+    sep = require("path").sep;
     if (Lazy == null) {
       Lazy = require("lazy.js");
     }

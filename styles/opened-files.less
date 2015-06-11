@@ -54,19 +54,31 @@ div.tree-view-scroller {
     margin-bottom: 4px;
   }
 }
+@file-name-top: 10px;
+@folder-name-top: -2px;
+atom-workspace.theme-one-dark-ui div.improved-tabs>span {
+  @offset: 4px;
+  &.file {
+    top: @file-name-top - @offset;
+  }
+  &.folder{
+    top: @folder-name-top - @offset;
+  }
+}
 
 div.improved-tabs {
   margin-left:20px;
   width: 100%;
-  span {
+  display: inline-flex;
+  >span {
     position:absolute;
     &.file {
       color: @text-color;
-      top: 10px;
+      top: @file-name-top;
     }
     &.folder {
       color: @text-color-subtle;
-      top: -2px;
+      top: @folder-name-top;
     }
   }
 }

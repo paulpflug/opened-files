@@ -15,6 +15,7 @@
 <script lang="coffee">
 Lazy = null
 log = null
+sep = null
 CompositeDisposable = null
 projectManager = null
 settings = null
@@ -75,13 +76,13 @@ module.exports =
     addFile: (path) ->
       result = atom.project.relativizePath path
       if result?[0]?
-        rootName = result[0].split("/").pop()
+        rootName = result[0].split(sep).pop()
         rootElement = Lazy(@filesTree).where(name: rootName).first()
         unless rootElement?
           rootElement = {name: rootName, path: result[0], folders: [], files: []}
           @filesTree.push rootElement
           @filesTree = Lazy(@filesTree).sortBy("name").toArray()
-        splittedPath = result[1].split("/")
+        splittedPath = result[1].split(sep)
         if splittedPath.length == 1
           rootElement.files = addFileToTree rootElement.files, splittedPath[0], path
         else
@@ -89,10 +90,10 @@ module.exports =
     removeFile: (path) ->
       result = atom.project.relativizePath path
       if result?[0]?
-        rootName = result[0].split("/").pop()
+        rootName = result[0].split(sep).pop()
         rootElement = Lazy(@filesTree).where(name: rootName).first()
         if rootElement?
-          splittedPath = result[1].split("/")
+          splittedPath = result[1].split(sep)
           if splittedPath.length == 1
             rootElement.files = removeFileFromTree rootElement.files, splittedPath[0]
           else
@@ -106,6 +107,7 @@ module.exports =
       @$broadcast "getUnpinned"
       setTimeout (=>@$off("isUnpinned")),200
   beforeCompile: ->
+    sep = require("path").sep
     Lazy ?= require "lazy.js"
     log ?= require("./../lib/log")(atom.inDevMode(),"app-comp")
     projectManager ?= require("./../lib/project-manager")
