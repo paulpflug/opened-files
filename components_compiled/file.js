@@ -18,7 +18,7 @@ module.exports = {
     highlightTab: function(e) {
       var i, j, len, len1, tab, tabs, timeout;
       log("highlighting " + this.entry.name);
-      tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + this.entry.path + "']");
+      tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
       for (i = 0, len = timeouts.length; i < len; i++) {
         timeout = timeouts[i];
         clearTimeout(timeout);
@@ -36,7 +36,7 @@ module.exports = {
     unhighlightTab: function(e) {
       var i, len, remover, tab, tabs;
       log("unhighlighting " + this.entry.name);
-      tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + this.entry.path + "']");
+      tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
       for (i = 0, len = tabs.length; i < len; i++) {
         tab = tabs[i];
         tab.parentNode.classList.remove("of-highlighted");
@@ -115,7 +115,7 @@ module.exports = {
     },
     paintTabs: function() {
       var i, j, len, len1, tab, tabs;
-      tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + this.entry.path + "']");
+      tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
       if (this.entry.color) {
         for (i = 0, len = tabs.length; i < len; i++) {
           tab = tabs[i];

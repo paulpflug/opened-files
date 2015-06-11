@@ -31,7 +31,7 @@ improveAllTabs = ->
     if paneItem.getPath?
       path = paneItem.getPath()
       log "working with tab #{path}"
-      tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{path}']"
+      tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{path.replace(/\\/g,"\\\\")}']"
       for tab in tabs
         unless tab.querySelector ".folder"
           paths[path] ?= parsePath path

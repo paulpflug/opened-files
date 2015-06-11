@@ -32,7 +32,7 @@ module.exports =
   methods:
     highlightTab: (e) ->
       log "highlighting #{@entry.name}"
-      tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path}']"
+      tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
       for timeout in timeouts
         clearTimeout(timeout)
       timeouts = []
@@ -44,7 +44,7 @@ module.exports =
       e.stopPropagation()
     unhighlightTab: (e) ->
       log "unhighlighting #{@entry.name}"
-      tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path}']"
+      tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
       for tab in tabs
         tab.parentNode.classList.remove "of-highlighted"
         tab.parentNode.classList.add "of-unhighlighted"
@@ -91,7 +91,7 @@ module.exports =
       setTimeout @paintTabs,50
       e.stopPropagation()
     paintTabs: ->
-      tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path}']"
+      tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
       if @entry.color
         for tab in tabs
           tab.parentElement.setAttribute "style",
