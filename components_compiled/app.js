@@ -187,9 +187,9 @@ module.exports = {
   },
   created: function() {
     this.$on("notifySelect", (function(_this) {
-      return function(name) {
-        log("event - selected " + name);
-        return _this.$broadcast("selected", name);
+      return function(path) {
+        log("event - selected " + path);
+        return _this.$broadcast("selected", path);
       };
     })(this));
     this.$on("notifyColor", function(path, color) {

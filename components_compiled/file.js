@@ -1,4 +1,4 @@
-var __vue_template__ = "<li class=\"file list-item\" v-on=\"click: onClick, mouseenter: highlightTab, mouseleave: unhighlightTab\" v-class=\"selected: isSelected\">\n    <span class=\"name icon\">\n      {{entry.name}}\n    </span>\n    <span class=\"icon icon-pin\" v-class=\"unpinned: !isPinned\" v-on=\"click: togglePin\">\n    </span>\n    <span class=\"icon icon-paintcan\" v-on=\"click: paint\">\n    </span>\n    <span class=\"icon icon-x\" v-on=\"click: close\">\n    </span>\n  </li>";
+var __vue_template__ = "<li class=\"file list-item\" v-on=\"click: onClick, mouseenter: highlightTab, mouseleave: unhighlightTab\">\n    <span class=\"name icon\">\n      {{entry.name}}\n    </span>\n    <span class=\"icon icon-pin\" v-class=\"unpinned: !isPinned\" v-on=\"click: togglePin\">\n    </span>\n    <span class=\"icon icon-paintcan\" v-on=\"click: paint\">\n    </span>\n    <span class=\"icon icon-x\" v-on=\"click: close\">\n    </span>\n  </li>";
 var CompositeDisposable, log, timeouts;
 
 log = null;
@@ -10,7 +10,6 @@ timeouts = [];
 module.exports = {
   data: function() {
     return {
-      isSelected: false,
       isPinned: false,
       disposables: null
     };
@@ -30,13 +29,14 @@ module.exports = {
         tab.parentNode.classList.remove("of-unhighlighted");
         tab.parentNode.classList.add("of-highlighted");
       }
+      this.$el.classList.remove("of-unhighlighted");
+      this.$el.classList.add("of-highlighted");
       return e.stopPropagation();
     },
     unhighlightTab: function(e) {
-      var i, len, remover, results, tab, tabs;
+      var i, len, remover, tab, tabs;
       log("unhighlighting " + this.entry.name);
       tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + this.entry.path + "']");
-      results = [];
       for (i = 0, len = tabs.length; i < len; i++) {
         tab = tabs[i];
         tab.parentNode.classList.remove("of-highlighted");
@@ -47,9 +47,15 @@ module.exports = {
           }), 300));
         };
         remover(tab);
-        results.push(e.stopPropagation());
       }
-      return results;
+      this.$el.classList.remove("of-highlighted");
+      this.$el.classList.add("of-unhighlighted");
+      timeouts.push(setTimeout(((function(_this) {
+        return function() {
+          return _this.$el.classList.remove("of-unhighlighted");
+        };
+      })(this)), 300));
+      return e.stopPropagation();
     },
     close: function(e) {
       var i, len, pane, panePath, panes;
@@ -100,7 +106,7 @@ module.exports = {
       return e.stopPropagation();
     },
     onClick: function(e) {
-      this.$dispatch("notifySelect", this.entry.name);
+      this.$dispatch("notifySelect", this.entry.path);
       atom.workspace.open(this.entry.path, {
         searchAllPanes: true
       });
@@ -141,8 +147,8 @@ module.exports = {
   created: function() {
     this.isPinned = this.entry.pinned;
     this.$on("selected", (function(_this) {
-      return function(name) {
-        _this.isSelected = name === _this.entry.name;
+      return function(path) {
+        _this.isSelected = path === _this.entry.path;
         return true;
       };
     })(this));

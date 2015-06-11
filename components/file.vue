@@ -2,7 +2,6 @@
   <li
     class="file list-item"
     v-on="click: onClick, mouseenter: highlightTab, mouseleave: unhighlightTab"
-    v-class="selected: isSelected"
     >
     <span class="name icon">
       {{entry.name}}
@@ -26,7 +25,8 @@ timeouts = []
 
 module.exports =
   data: ->
-    isSelected: false
+    #isSelected: false
+    #v-class="selected: isSelected"
     isPinned: false
     disposables: null
   methods:
@@ -39,6 +39,8 @@ module.exports =
       for tab in tabs
         tab.parentNode.classList.remove "of-unhighlighted"
         tab.parentNode.classList.add "of-highlighted"
+      @$el.classList.remove "of-unhighlighted"
+      @$el.classList.add "of-highlighted"
       e.stopPropagation()
     unhighlightTab: (e) ->
       log "unhighlighting #{@entry.name}"
@@ -49,7 +51,10 @@ module.exports =
         remover = (tab) ->
           timeouts.push(setTimeout (->tab.parentNode.classList.remove "of-unhighlighted"),300)
         remover(tab)
-        e.stopPropagation()
+      @$el.classList.remove "of-highlighted"
+      @$el.classList.add "of-unhighlighted"
+      timeouts.push(setTimeout (=>@$el.classList.remove "of-unhighlighted"),300)
+      e.stopPropagation()
     close: (e) ->
       panes = atom.workspace.getPaneItems()
       for pane in panes
@@ -81,7 +86,7 @@ module.exports =
           @$root.removeFile @entry.path
       e.stopPropagation()
     onClick: (e) ->
-      @$dispatch("notifySelect", @entry.name)
+      @$dispatch("notifySelect", @entry.path)
       atom.workspace.open(@entry.path,searchAllPanes: true)
       setTimeout @paintTabs,50
       e.stopPropagation()
@@ -107,8 +112,8 @@ module.exports =
     @disposables?.dispose()
   created: ->
     @isPinned = @entry.pinned
-    @$on "selected", (name) =>
-      @isSelected = name == @entry.name
+    @$on "selected", (path) =>
+      @isSelected = path == @entry.path
       return true
     @$on "getUnpinned", =>
       unless @isPinned

@@ -116,9 +116,9 @@ module.exports =
   beforeDestroy: ->
     @disposables?.dispose()
   created: ->
-    @$on "notifySelect", (name) =>
-      log "event - selected #{name}"
-      @$broadcast "selected", name
+    @$on "notifySelect", (path) =>
+      log "event - selected #{path}"
+      @$broadcast "selected", path
     @$on "notifyColor", (path, color) ->
       log "event - color #{path}"
       newSetting = settings[path] ? {}
