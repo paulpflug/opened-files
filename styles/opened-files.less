@@ -54,31 +54,34 @@ div.tree-view-scroller {
     margin-bottom: 4px;
   }
 }
-@file-name-top: 10px;
-@folder-name-top: -2px;
-atom-workspace.theme-one-dark-ui div.improved-tabs>span {
-  @offset: 4px;
-  &.file {
-    top: @file-name-top - @offset;
+@file-name-top: 6px;
+@folder-name-top: -6px;
+.test-position(@offset) {
+  >span {
+    &.file {
+      top: @file-name-top - @offset;
+    }
+    &.folder{
+      top: @folder-name-top - @offset;
+    }
   }
-  &.folder{
-    top: @folder-name-top - @offset;
-  }
+}
+atom-workspace.theme-seti-ui div.improved-tabs {
+  .test-position(-4px);
 }
 
 div.improved-tabs {
-  margin-left:20px;
+  margin-left:4px;
   width: 100%;
   display: inline-flex;
+  .test-position(0px);
   >span {
     position:absolute;
     &.file {
       color: @text-color;
-      top: @file-name-top;
     }
     &.folder {
       color: @text-color-subtle;
-      top: @folder-name-top;
     }
   }
 }
