@@ -17,6 +17,10 @@ A view of all opened files and other useful additions.
  - Interop with other themes isn't tested
  - Not the full tab is colored (:before can't be targeted)
 
+## Discuss
+
+[here](https://discuss.atom.io/t/announce-opened-files)
+
 ## License
 Copyright (c) 2015 Paul Pflugradt
 Licensed under the MIT license.
