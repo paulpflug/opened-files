@@ -1,7 +1,7 @@
 {
   "name": "opened-files",
   "main": "./lib/opened-files",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A view of all opened files and other useful additions",
   "keywords": [],
   "repository": "https://github.com/paulpflug/opened-files",
