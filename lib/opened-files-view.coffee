@@ -91,9 +91,12 @@ class OpenedFilesView
 
   toggle: =>
     if @element?
+      treeView = document.querySelector "div.tree-view-scroller"
       if @element.style.display == "" or @element.style.display=="block"
         @element.style.display="none"
+        treeView?.setAttribute "style", "height:100%"
       else
         @element.style.display="block"
+        treeView?.removeAttribute "style"
     else
       @draw()
