@@ -90,7 +90,10 @@ class OpenedFilesView
     @element = null
 
   toggle: =>
-    if @element.style.display == "" or @element.style.display=="block"
-      @element.style.display="none"
+    if @element?
+      if @element.style.display == "" or @element.style.display=="block"
+        @element.style.display="none"
+      else
+        @element.style.display="block"
     else
-      @element.style.display="block"
+      @draw()
