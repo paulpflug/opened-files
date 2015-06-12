@@ -1,5 +1,7 @@
 compile = null
 load = null
+treeManager = null
+reload = null
 log = require("./log")(atom.inDevMode())
 {CompositeDisposable} = require 'atom'
 
@@ -25,6 +27,8 @@ class OpenedFilesView
       @element = document.createElement('div')
       @element.classList.add('file-list')
       @element.classList.add(packageName)
+      treeManager ?= require "./tree-manager.coffee"
+      treeManager.setOpenedFilesElement @element
     unless @comps?
       load ?= require "atom-vue-component-loader"
       @comps = load compTree,
@@ -46,19 +50,13 @@ class OpenedFilesView
             if te.getPath() == closedPath
               return null
           @comps.app.removeFile closedPath
-      @disposables.add atom.commands.add('atom-workspace', {
-        'opened-files:close-all-but-pinned': =>
-          panes = atom.workspace.getPaneItems()
-          @comps.app.getUnpinned (path) ->
-            for pane in panes
-              if pane.getPath
-                panePath = pane.getPath()
-                if panePath == path
-                  log "destroying #{panePath}"
-                  pane.destroy()
-      })
+      @disposables.add atom.commands.add 'atom-workspace',
+        'opened-files:close-all-but-pinned': @comps.app.closeUnpinned
+
   reload: =>
     log "reloading / compiling"
+    reload ?= require "simple-reload"
+    treeManager ?= reload "./tree-manager.coffee"
     try
       compile ?= require("atom-vue-component-compiler")(packageName: packageName)
     catch
@@ -88,15 +86,13 @@ class OpenedFilesView
     @disposables = null
     @element?.parentNode?.removeChild?(@element)
     @element = null
+    treeManager?.destroy()
+    treeManager = null
 
   toggle: =>
     if @element?
-      treeView = document.querySelector "div.tree-view-scroller"
-      if @element.style.display == "" or @element.style.display=="block"
-        @element.style.display="none"
-        treeView?.setAttribute "style", "height:100%"
-      else
-        @element.style.display="block"
-        treeView?.removeAttribute "style"
+      log "toggling visibility"
+      @element.classList.toggle "hidden"
+      treeManager?.autoHeight()
     else
       @draw()

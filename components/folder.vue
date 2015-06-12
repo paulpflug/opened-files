@@ -9,6 +9,8 @@
     ">
     <div class="header list-item">
       <span class="name icon icon-file-directory" data-name={{entry.name}} data-path={{entry.path}}>{{entry.name}}</span>
+      <span class="icon icon-x" v-on="click: close">
+      </span>
     </div>
     <ol class="entries list-tree">
       <template v-component="folder" v-repeat="entry: entry.folders" track-by="name">
@@ -27,8 +29,9 @@
         color: false
       }
     methods:
-      paint: (e) ->
-
+      close: (e) ->
+        @$broadcast "close"
+        e.stopPropagation()
       onClick: (e) ->
         @$dispatch("notifySelect",@entry.name)
         @toggleFolder()

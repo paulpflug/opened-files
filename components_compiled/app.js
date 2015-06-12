@@ -1,4 +1,4 @@
-var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\">\n      <template v-component=\"folder\" v-repeat=\"entry: filesTree\" track-by=\"name\" class=\"directory list-nested-item project-root\">\n      </template>\n    </ol>\n<div class=\"hr icon\" v-class=\"icon-triangle-up:expanded,icon-triangle-down:!expanded\" v-on=\"click:toggle\"></div>";
+var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\">\n      <template v-component=\"folder\" v-repeat=\"entry: filesTree\" track-by=\"name\" class=\"directory list-nested-item project-root\">\n      </template>\n    </ol>";
 var CompositeDisposable, Lazy, addFileToTree, addFolderToTree, getElementFromTree, log, projectManager, removeFileFromTree, removeFolderFromTree, sep, settings;
 
 Lazy = null;
@@ -93,20 +93,6 @@ module.exports = {
     };
   },
   methods: {
-    toggle: function(e) {
-      var treeView;
-      this.expanded = !this.expanded;
-      treeView = document.querySelector("div.tree-view-resizer>div.tree-view-scroller");
-      this.$el;
-      if (this.expanded) {
-        this.$el.setAttribute("style", "height:50%;");
-        treeView.setAttribute("style", "height:50%;");
-      } else {
-        this.$el.removeAttribute("style");
-        treeView.removeAttribute("style");
-      }
-      return e.stopPropagation();
-    },
     addFile: function(path) {
       var result, rootElement, rootName, splittedPath;
       result = atom.project.relativizePath(path);
@@ -154,17 +140,8 @@ module.exports = {
         }
       }
     },
-    getUnpinned: function(cb) {
-      this.$on("isUnpinned", function(path) {
-        log("recieved " + path);
-        return cb(path);
-      });
-      this.$broadcast("getUnpinned");
-      return setTimeout(((function(_this) {
-        return function() {
-          return _this.$off("isUnpinned");
-        };
-      })(this)), 200);
+    closeUnpinned: function() {
+      return this.$broadcast("close");
     }
   },
   beforeCompile: function() {

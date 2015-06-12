@@ -1,7 +1,9 @@
 var __vue_template__ = "<li class=\"file list-item\" v-on=\"click: onClick, mouseenter: highlightTab, mouseleave: unhighlightTab\">\n    <span class=\"name icon\">\n      {{entry.name}}\n    </span>\n    <span class=\"icon icon-pin\" v-class=\"unpinned: !isPinned\" v-on=\"click: togglePin\">\n    </span>\n    <span class=\"icon icon-paintcan\" v-on=\"click: paint\">\n    </span>\n    <span class=\"icon icon-x\" v-on=\"click: close\">\n    </span>\n  </li>";
-var CompositeDisposable, log, timeouts;
+var CompositeDisposable, log, timeouts, treeManager;
 
 log = null;
+
+treeManager = null;
 
 CompositeDisposable = null;
 
@@ -70,7 +72,7 @@ module.exports = {
           }
         }
       }
-      return e.stopPropagation();
+      return e != null ? e.stopPropagation() : void 0;
     },
     paint: function(e) {
       this.$root["color-picker"].getNewColor(e.x, e.y, this.entry.color, (function(_this) {
@@ -135,6 +137,9 @@ module.exports = {
     if (log == null) {
       log = require("./../lib/log")(atom.inDevMode(), "file-comp");
     }
+    if (treeManager == null) {
+      treeManager = require("./../lib/tree-manager");
+    }
     if (CompositeDisposable == null) {
       CompositeDisposable = require('atom').CompositeDisposable;
     }
@@ -152,19 +157,22 @@ module.exports = {
         return true;
       };
     })(this));
-    return this.$on("getUnpinned", (function(_this) {
+    return this.$on("close", (function(_this) {
       return function() {
         if (!_this.isPinned) {
-          log("unpinned " + _this.entry.path);
-          return _this.$root.$emit("isUnpinned", _this.entry.path);
+          return _this.close();
         }
       };
     })(this));
   },
+  destroyed: function() {
+    return treeManager != null ? treeManager.autoHeight() : void 0;
+  },
   ready: function() {
     if (this.entry.color) {
-      return this.paintTabs();
+      this.paintTabs();
     }
+    return treeManager != null ? treeManager.autoHeight() : void 0;
   }
 };
 

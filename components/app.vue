@@ -9,12 +9,12 @@
         >
       </template>
     </ol>
-<div class="hr icon" v-class="icon-triangle-up:expanded,icon-triangle-down:!expanded" v-on="click:toggle"></div>
 </template>
 
 <script lang="coffee">
 Lazy = null
 log = null
+
 sep = null
 CompositeDisposable = null
 projectManager = null
@@ -62,17 +62,6 @@ module.exports =
     disposables: null
     expanded: false
   methods:
-    toggle: (e) ->
-      @expanded = !@expanded
-      treeView = document.querySelector "div.tree-view-resizer>div.tree-view-scroller"
-      @$el
-      if @expanded
-        @$el.setAttribute "style", "height:50%;"
-        treeView.setAttribute "style","height:50%;"
-      else
-        @$el.removeAttribute "style"
-        treeView.removeAttribute "style"
-      e.stopPropagation()
     addFile: (path) ->
       result = atom.project.relativizePath path
       if result?[0]?
@@ -100,17 +89,14 @@ module.exports =
             rootElement.folders = removeFolderFromTree rootElement.folders, splittedPath
           if rootElement.folders.length == 0 and rootElement.files.length == 0
             @filesTree.$remove rootElement
-    getUnpinned: (cb) ->
-      @$on "isUnpinned", (path) ->
-        log "recieved #{path}"
-        cb(path)
-      @$broadcast "getUnpinned"
-      setTimeout (=>@$off("isUnpinned")),200
+    closeUnpinned: ->
+      @$broadcast "close"
   beforeCompile: ->
     sep = require("path").sep
     Lazy ?= require "lazy.js"
     log ?= require("./../lib/log")(atom.inDevMode(),"app-comp")
     projectManager ?= require("./../lib/project-manager")
+
     settings = projectManager.getProjectSetting()
 
     CompositeDisposable ?= require('atom').CompositeDisposable

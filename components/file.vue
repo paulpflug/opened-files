@@ -20,6 +20,7 @@
 
 <script lang="coffee">
 log = null
+treeManager = null
 CompositeDisposable = null
 timeouts = []
 
@@ -63,7 +64,7 @@ module.exports =
           if panePath == @entry.path
             log "destroying #{panePath}"
             pane.destroy()
-      e.stopPropagation()
+      e?.stopPropagation()
     paint: (e) ->
       @$root["color-picker"].getNewColor e.x, e.y, @entry.color, (newColor) =>
         @entry.color = newColor
@@ -106,6 +107,7 @@ module.exports =
         @$el.removeAttribute "style"
   beforeCompile: ->
     log ?= require("./../lib/log")(atom.inDevMode(),"file-comp")
+    treeManager ?= require("./../lib/tree-manager")
     CompositeDisposable ?= require('atom').CompositeDisposable
     @disposables = new CompositeDisposable
   beforeDestroy: ->
@@ -115,10 +117,11 @@ module.exports =
     @$on "selected", (path) =>
       @isSelected = path == @entry.path
       return true
-    @$on "getUnpinned", =>
-      unless @isPinned
-        log "unpinned #{@entry.path}"
-        @$root.$emit "isUnpinned", @entry.path
+    @$on "close" , =>
+      @close() unless @isPinned
+  destroyed: ->
+    treeManager?.autoHeight()
   ready: ->
     @paintTabs() if @entry.color
+    treeManager?.autoHeight()
 </script>
