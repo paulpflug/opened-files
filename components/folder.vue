@@ -22,25 +22,30 @@
 </template>
 
 <script lang="coffee">
-  module.exports =
-    data: -> {
-        isSelected: false
-        isCollapsed: false
-        color: false
-      }
-    methods:
-      close: (e) ->
-        @$broadcast "close"
-        e.stopPropagation()
-      onClick: (e) ->
-        @$dispatch("notifySelect",@entry.name)
-        @toggleFolder()
-        e.stopPropagation()
-      toggleFolder: ->
-        @isCollapsed = !@isCollapsed
+treeManager = null
+module.exports =
+  data: -> {
+      isSelected: false
+      isCollapsed: false
+      color: false
+    }
+  methods:
+    close: (e) ->
+      @$broadcast "close"
+      e.stopPropagation()
+    onClick: (e) ->
+      @$dispatch("notifySelect",@entry.name)
+      @toggleFolder()
+      e.stopPropagation()
+    toggleFolder: ->
+      @isCollapsed = !@isCollapsed
 
-    created: ->
-      @$on "selected", (name) =>
-        @isSelected = name == @entry.name
-        return true
+  created: ->
+    @$on "selected", (name) =>
+      @isSelected = name == @entry.name
+      return true
+  destroyed: ->
+    treeManager ?= require("./../lib/tree-manager")
+    treeManager?.autoHeight()
+
 </script>

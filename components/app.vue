@@ -14,7 +14,6 @@
 <script lang="coffee">
 Lazy = null
 log = null
-
 sep = null
 CompositeDisposable = null
 projectManager = null
@@ -103,6 +102,7 @@ module.exports =
     @disposables = new CompositeDisposable
   beforeDestroy: ->
     @disposables?.dispose()
+
   created: ->
     @$on "notifySelect", (path) =>
       log "event - selected #{path}"

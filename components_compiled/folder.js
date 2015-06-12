@@ -1,4 +1,8 @@
 var __vue_template__ = "<li class=\"directory list-nested-item\" v-on=\"click: onClick\" v-class=\"\n      selected: isSelected,\n      collapsed: isCollapsed,\n      expanded: !isCollapsed\n    \">\n    <div class=\"header list-item\">\n      <span class=\"name icon icon-file-directory\" data-name=\"{{entry.name}}\" data-path=\"{{entry.path}}\">{{entry.name}}</span>\n      <span class=\"icon icon-x\" v-on=\"click: close\">\n      </span>\n    </div>\n    <ol class=\"entries list-tree\">\n      <template v-component=\"folder\" v-repeat=\"entry: entry.folders\" track-by=\"name\">\n      </template>\n      <template v-component=\"file\" v-repeat=\"entry: entry.files\" track-by=\"name\">\n      </template>\n    </ol>\n  </li>";
+var treeManager;
+
+treeManager = null;
+
 module.exports = {
   data: function() {
     return {
@@ -28,6 +32,12 @@ module.exports = {
         return true;
       };
     })(this));
+  },
+  destroyed: function() {
+    if (treeManager == null) {
+      treeManager = require("./../lib/tree-manager");
+    }
+    return treeManager != null ? treeManager.autoHeight() : void 0;
   }
 };
 
