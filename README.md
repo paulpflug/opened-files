@@ -19,7 +19,7 @@ A view of all opened files and other useful additions.
 
 ## Discuss
 
-[here](https://discuss.atom.io/t/announce-opened-files)
+Let me hear your ideas for improvement [here](https://discuss.atom.io/t/announce-opened-files)
 
 ## License
 Copyright (c) 2015 Paul Pflugradt
