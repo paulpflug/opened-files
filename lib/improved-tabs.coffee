@@ -1,5 +1,5 @@
 sep = require("path").sep
-log = require("./log")(atom.inDevMode(),"improved-tabs")
+log = require("./log")("improved-tabs")
 
 {CompositeDisposable} = require 'atom'
 paths = {}
@@ -31,7 +31,7 @@ improveAllTabs = ->
     if paneItem.getPath?
       path = paneItem.getPath()
       if path?
-        log "working with tab #{path}"
+        #log "working with tab #{path}"
         tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{path.replace(/\\/g,"\\\\")}']"
         for tab in tabs
           unless tab.querySelector ".folder"

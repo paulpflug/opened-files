@@ -90,10 +90,12 @@ module.exports =
             @filesTree.$remove rootElement
     closeUnpinned: ->
       @$broadcast "close"
+    paint: ->
+      @$broadcast "paint"
   beforeCompile: ->
     sep = require("path").sep
     Lazy ?= require "lazy.js"
-    log ?= require("./../lib/log")(atom.inDevMode(),"app-comp")
+    log ?= require("./../lib/log")("app-comp")
     projectManager ?= require("./../lib/project-manager")
 
     settings = projectManager.getProjectSetting()
@@ -119,6 +121,9 @@ module.exports =
       newSetting.pinned = pinned
       settings[path] = newSetting
       projectManager.addToProjectSetting settings, false
+    @$on "removeFolder", (entry) =>
+      @filesTree.$remove entry
+      return false
   compiled: ->
     for path,obj of settings
       if obj.pinned

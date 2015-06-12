@@ -11,9 +11,12 @@ module.exports = new class OpenedFiles
   ofView: null
   improvedTabs: null
   disposables: null
-
+  config:
+    debug:
+      type: "boolean"
+      default: false
   activate: () ->
-    log = require("./log")(atom.inDevMode())
+    log = require("./log")("core")
     @disposables = new CompositeDisposable
 
     unless @ofView?

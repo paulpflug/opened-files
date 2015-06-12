@@ -19,7 +19,6 @@ module.exports = {
   methods: {
     highlightTab: function(e) {
       var i, j, len, len1, tab, tabs, timeout;
-      log("highlighting " + this.entry.name);
       tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
       for (i = 0, len = timeouts.length; i < len; i++) {
         timeout = timeouts[i];
@@ -37,7 +36,6 @@ module.exports = {
     },
     unhighlightTab: function(e) {
       var i, len, remover, tab, tabs;
-      log("unhighlighting " + this.entry.name);
       tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
       for (i = 0, len = tabs.length; i < len; i++) {
         tab = tabs[i];
@@ -60,19 +58,28 @@ module.exports = {
       return e.stopPropagation();
     },
     close: function(e) {
-      var i, len, pane, panePath, panes;
+      var i, len, pane, panePath, panes, path, results;
+      if (e != null) {
+        e.stopPropagation();
+      }
       panes = atom.workspace.getPaneItems();
+      path = this.entry.path;
+      results = [];
       for (i = 0, len = panes.length; i < len; i++) {
         pane = panes[i];
         if (pane.getPath) {
           panePath = pane.getPath();
-          if (panePath === this.entry.path) {
+          if (panePath === path) {
             log("destroying " + panePath);
-            pane.destroy();
+            results.push(pane.destroy());
+          } else {
+            results.push(void 0);
           }
+        } else {
+          results.push(void 0);
         }
       }
-      return e != null ? e.stopPropagation() : void 0;
+      return results;
     },
     paint: function(e) {
       this.$root["color-picker"].getNewColor(e.x, e.y, this.entry.color, (function(_this) {
@@ -117,6 +124,7 @@ module.exports = {
     },
     paintTabs: function() {
       var i, j, len, len1, tab, tabs;
+      log("painting Tabs " + this.entry.path);
       tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
       if (this.entry.color) {
         for (i = 0, len = tabs.length; i < len; i++) {
@@ -135,7 +143,7 @@ module.exports = {
   },
   beforeCompile: function() {
     if (log == null) {
-      log = require("./../lib/log")(atom.inDevMode(), "file-comp");
+      log = require("./../lib/log")("file-comp");
     }
     if (treeManager == null) {
       treeManager = require("./../lib/tree-manager");
@@ -143,7 +151,26 @@ module.exports = {
     if (CompositeDisposable == null) {
       CompositeDisposable = require('atom').CompositeDisposable;
     }
-    return this.disposables = new CompositeDisposable;
+    this.disposables = new CompositeDisposable;
+    return this.disposables.add(atom.workspace.onDidDestroyPaneItem((function(_this) {
+      return function(arg) {
+        var closedPath, i, index, item, len, pane, remainingTextEditors, te;
+        item = arg.item, pane = arg.pane, index = arg.index;
+        if (item.getPath) {
+          closedPath = item.getPath();
+          if (closedPath === _this.entry.path && !_this.isPinned) {
+            remainingTextEditors = atom.workspace.getTextEditors();
+            for (i = 0, len = remainingTextEditors.length; i < len; i++) {
+              te = remainingTextEditors[i];
+              if (te.getPath() === closedPath) {
+                return null;
+              }
+            }
+            return _this.$dispatch("removeFile", _this.entry);
+          }
+        }
+      };
+    })(this)));
   },
   beforeDestroy: function() {
     var ref;
@@ -157,10 +184,17 @@ module.exports = {
         return true;
       };
     })(this));
-    return this.$on("close", (function(_this) {
+    this.$on("close", (function(_this) {
       return function() {
         if (!_this.isPinned) {
           return _this.close();
+        }
+      };
+    })(this));
+    return this.$on("paint", (function(_this) {
+      return function() {
+        if (_this.entry.color) {
+          return _this.paintTabs();
         }
       };
     })(this));
@@ -168,7 +202,7 @@ module.exports = {
   destroyed: function() {
     return treeManager != null ? treeManager.autoHeight() : void 0;
   },
-  ready: function() {
+  attached: function() {
     if (this.entry.color) {
       this.paintTabs();
     }

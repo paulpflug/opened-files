@@ -22,6 +22,7 @@
 </template>
 
 <script lang="coffee">
+log = null
 treeManager = null
 module.exports =
   data: -> {
@@ -31,21 +32,38 @@ module.exports =
     }
   methods:
     close: (e) ->
-      @$broadcast "close"
       e.stopPropagation()
+      @$broadcast "close"
+
     onClick: (e) ->
       @$dispatch("notifySelect",@entry.name)
       @toggleFolder()
       e.stopPropagation()
     toggleFolder: ->
       @isCollapsed = !@isCollapsed
+      treeManager.autoHeight()
+    isEmpty: ->
+      return @entry.files.length == 0 and @entry.folders.length == 0
 
   created: ->
     @$on "selected", (name) =>
       @isSelected = name == @entry.name
       return true
+    @$on "removeFile", (entry) =>
+      log "removing #{entry.path}"
+      @entry.files.$remove entry
+      if @isEmpty()
+        @$dispatch "removeFolder", @entry
+      return false
+    @$on "removeFolder", (entry) =>
+      @entry.folders.$remove entry
+      if @isEmpty()
+        @$dispatch "removeFolder", @entry
+      return false
   destroyed: ->
-    treeManager ?= require("./../lib/tree-manager")
-    treeManager?.autoHeight()
 
+    treeManager.autoHeight()
+  beforeCompile: ->
+    log ?= require("./../lib/log")("file-comp")
+    treeManager ?= require("./../lib/tree-manager")
 </script>

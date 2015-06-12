@@ -142,6 +142,9 @@ module.exports = {
     },
     closeUnpinned: function() {
       return this.$broadcast("close");
+    },
+    paint: function() {
+      return this.$broadcast("paint");
     }
   },
   beforeCompile: function() {
@@ -150,7 +153,7 @@ module.exports = {
       Lazy = require("lazy.js");
     }
     if (log == null) {
-      log = require("./../lib/log")(atom.inDevMode(), "app-comp");
+      log = require("./../lib/log")("app-comp");
     }
     if (projectManager == null) {
       projectManager = require("./../lib/project-manager");
@@ -180,7 +183,7 @@ module.exports = {
       settings[path] = newSetting;
       return projectManager.addToProjectSetting(settings, false);
     });
-    return this.$on("notifyPinned", function(path, pinned) {
+    this.$on("notifyPinned", function(path, pinned) {
       var newSetting, ref;
       log("event - (un)pinned " + path);
       newSetting = (ref = settings[path]) != null ? ref : {};
@@ -188,6 +191,12 @@ module.exports = {
       settings[path] = newSetting;
       return projectManager.addToProjectSetting(settings, false);
     });
+    return this.$on("removeFolder", (function(_this) {
+      return function(entry) {
+        _this.filesTree.$remove(entry);
+        return false;
+      };
+    })(this));
   },
   compiled: function() {
     var obj, path, results;

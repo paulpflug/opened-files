@@ -17,7 +17,7 @@ module.exports = {
   },
   beforeCompile: function() {
     if (log == null) {
-      log = require("./../lib/log")(atom.inDevMode(), "color-picker");
+      log = require("./../lib/log")("color-picker");
     }
     if (CompositeDisposable == null) {
       CompositeDisposable = require('atom').CompositeDisposable;

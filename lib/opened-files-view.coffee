@@ -2,7 +2,7 @@ compile = null
 load = null
 treeManager = null
 reload = null
-log = require("./log")(atom.inDevMode())
+log = require("./log")("view")
 {CompositeDisposable} = require 'atom'
 
 packageName = "opened-files"
@@ -34,22 +34,17 @@ class OpenedFilesView
       @comps = load compTree,
         cwd: "#{atom.packages.resolvePackagePath(packageName)}/components_compiled/"
         reload: reload
+        debug: atom.inDevMode()
       @comps.app.$mount(@element)
+      @comps.app.paint()
       @comps.app["color-picker"] = @comps["color-picker"]
+
     unless @disposables?
       @disposables = new CompositeDisposable
       @disposables.add atom.workspace.observeTextEditors (editor) =>
         path = editor.getPath()
         @comps.app.addFile path
-      @disposables.add atom.workspace.onDidDestroyPaneItem ({item,pane,index}) =>
-        if item.getPath
-          closedPath = item.getPath()
-          # see if path is still opened
-          remainingTextEditors = atom.workspace.getTextEditors()
-          for te in remainingTextEditors
-            if te.getPath() == closedPath
-              return null
-          @comps.app.removeFile closedPath
+
       @disposables.add atom.commands.add 'atom-workspace',
         'opened-files:close-all-but-pinned': @comps.app.closeUnpinned
 
@@ -75,6 +70,7 @@ class OpenedFilesView
     #@panel = atom.workspace.addLeftPanel(item: @element, priority: 20)
     @tv = atom.packages.getActivePackage("tree-view")?.mainModule.treeView.element
     @tv?.insertBefore @element, @tv.firstChild
+    treeManager.autoHeight()
     #@element.parentElement.classList.add("opened-files")
 
 

@@ -1,5 +1,5 @@
 treeManager = null
-log = require("./log")(atom.inDevMode(),"tree-manager")
+log = require("./log")("tree-manager")
 module.exports =
 new class TreeManager
   treeViewElement: null
@@ -18,14 +18,14 @@ new class TreeManager
     unless @openedFilesElement?
       @treeViewElement.setAttribute "style", "height: 100%"
       return
+    @openedFilesElement.removeAttribute "style"
     containerHeight = @treeViewElement.parentElement.clientHeight
     ofHeight = @openedFilesElement.scrollHeight
     tvHeight = containerHeight - ofHeight
     if tvHeight < containerHeight/2
+      log "half/half resizing"
       tvHeight = containerHeight/2
       @openedFilesElement.setAttribute "style", "height: #{tvHeight}px"
-    else
-      @openedFilesElement.removeAttribute "style"
     @treeViewElement.setAttribute "style", "height: #{tvHeight}px"
     @resizeRunning = false
 

@@ -15,7 +15,7 @@ module.exports =
     disposables: null
     scp: null
   beforeCompile: ->
-    log ?= require("./../lib/log")(atom.inDevMode(),"color-picker")
+    log ?= require("./../lib/log")("color-picker")
     CompositeDisposable ?= require('atom').CompositeDisposable
     @disposables = new CompositeDisposable
   ready: ->

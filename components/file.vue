@@ -32,7 +32,6 @@ module.exports =
     disposables: null
   methods:
     highlightTab: (e) ->
-      log "highlighting #{@entry.name}"
       tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
       for timeout in timeouts
         clearTimeout(timeout)
@@ -44,7 +43,6 @@ module.exports =
       @$el.classList.add "of-highlighted"
       e.stopPropagation()
     unhighlightTab: (e) ->
-      log "unhighlighting #{@entry.name}"
       tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
       for tab in tabs
         tab.parentNode.classList.remove "of-highlighted"
@@ -57,14 +55,16 @@ module.exports =
       timeouts.push(setTimeout (=>@$el.classList.remove "of-unhighlighted"),300)
       e.stopPropagation()
     close: (e) ->
+      e?.stopPropagation()
       panes = atom.workspace.getPaneItems()
+      path = @entry.path
       for pane in panes
         if pane.getPath
           panePath = pane.getPath()
-          if panePath == @entry.path
+          if panePath == path
             log "destroying #{panePath}"
             pane.destroy()
-      e?.stopPropagation()
+
     paint: (e) ->
       @$root["color-picker"].getNewColor e.x, e.y, @entry.color, (newColor) =>
         @entry.color = newColor
@@ -92,6 +92,7 @@ module.exports =
       setTimeout @paintTabs,50
       e.stopPropagation()
     paintTabs: ->
+      log "painting Tabs #{@entry.path}"
       tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
       if @entry.color
         for tab in tabs
@@ -106,10 +107,20 @@ module.exports =
           tab.parentElement.removeAttribute "style"
         @$el.removeAttribute "style"
   beforeCompile: ->
-    log ?= require("./../lib/log")(atom.inDevMode(),"file-comp")
+    log ?= require("./../lib/log")("file-comp")
     treeManager ?= require("./../lib/tree-manager")
     CompositeDisposable ?= require('atom').CompositeDisposable
     @disposables = new CompositeDisposable
+    @disposables.add atom.workspace.onDidDestroyPaneItem ({item,pane,index}) =>
+      if item.getPath
+        closedPath = item.getPath()
+        if closedPath == @entry.path and not @isPinned
+          # see if path is still opened
+          remainingTextEditors = atom.workspace.getTextEditors()
+          for te in remainingTextEditors
+            if te.getPath() == closedPath
+              return null
+          @$dispatch "removeFile", @entry
   beforeDestroy: ->
     @disposables?.dispose()
   created: ->
@@ -119,9 +130,13 @@ module.exports =
       return true
     @$on "close" , =>
       @close() unless @isPinned
+    @$on "paint", =>
+      @paintTabs() if @entry.color
+
+
   destroyed: ->
     treeManager?.autoHeight()
-  ready: ->
+  attached: ->
     @paintTabs() if @entry.color
     treeManager?.autoHeight()
 </script>
