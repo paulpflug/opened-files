@@ -16,7 +16,7 @@
     "simple-color-picker": "0.0.6"
   },
   "devDependencies": {
-    "simple-reload": "0.0.3",
+    "simple-reload": "0.0.4",
     "atom-vue-component-compiler": "0.0.2"
   }
 }
