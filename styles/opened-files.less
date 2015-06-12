@@ -3,6 +3,12 @@
 // See https://github.com/atom/atom-dark-ui/blob/master/styles/ui-variables.less
 // for a full listing of what's available.
 @import "ui-variables";
+
+ul.tab-bar>li.tab[is="tabs-tab"] {
+  background: @tab-background-color;
+  overflow: hidden;
+}
+
 .of-highlighted,
 ul.tab-bar>li.tab.of-highlighted {
   background-color: @text-color-highlight;
@@ -47,7 +53,7 @@ ul.tab-bar>li.tab.of-unhighlighted {
 }
 @file-name-top: 6px;
 @folder-name-top: -6px;
-.test-position(@offset) {
+.text-position(@offset) {
   >span {
     &.file {
       top: @file-name-top - @offset;
@@ -58,14 +64,15 @@ ul.tab-bar>li.tab.of-unhighlighted {
   }
 }
 atom-workspace.theme-seti-ui div.improved-tabs {
-  .test-position(-4px);
+  .text-position(-4px);
 }
 
 div.improved-tabs {
   margin-left:4px;
   width: 100%;
   display: inline-flex;
-  .test-position(0px);
+
+  .text-position(0px);
   >span {
     position:absolute;
     &.file {

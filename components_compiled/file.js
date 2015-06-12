@@ -154,19 +154,21 @@ module.exports = {
     this.disposables = new CompositeDisposable;
     return this.disposables.add(atom.workspace.onDidDestroyPaneItem((function(_this) {
       return function(arg) {
-        var closedPath, i, index, item, len, pane, remainingTextEditors, te;
+        var closedPath, i, index, item, len, pane, ref, remainingTextEditors, te;
         item = arg.item, pane = arg.pane, index = arg.index;
         if (item.getPath) {
           closedPath = item.getPath();
-          if (closedPath === _this.entry.path && !_this.isPinned) {
-            remainingTextEditors = atom.workspace.getTextEditors();
-            for (i = 0, len = remainingTextEditors.length; i < len; i++) {
-              te = remainingTextEditors[i];
-              if (te.getPath() === closedPath) {
-                return null;
+          if ((_this != null) && (_this.isPinned != null) && (((ref = _this.entry) != null ? ref.path : void 0) != null)) {
+            if (closedPath === _this.entry.path && !_this.isPinned) {
+              remainingTextEditors = atom.workspace.getTextEditors();
+              for (i = 0, len = remainingTextEditors.length; i < len; i++) {
+                te = remainingTextEditors[i];
+                if (te.getPath() === closedPath) {
+                  return null;
+                }
               }
+              return _this.$dispatch("removeFile", _this.entry);
             }
-            return _this.$dispatch("removeFile", _this.entry);
           }
         }
       };

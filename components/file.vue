@@ -114,13 +114,14 @@ module.exports =
     @disposables.add atom.workspace.onDidDestroyPaneItem ({item,pane,index}) =>
       if item.getPath
         closedPath = item.getPath()
-        if closedPath == @entry.path and not @isPinned
-          # see if path is still opened
-          remainingTextEditors = atom.workspace.getTextEditors()
-          for te in remainingTextEditors
-            if te.getPath() == closedPath
-              return null
-          @$dispatch "removeFile", @entry
+        if @? and @isPinned? and @entry?.path?
+          if closedPath == @entry.path and not @isPinned
+            # see if path is still opened
+            remainingTextEditors = atom.workspace.getTextEditors()
+            for te in remainingTextEditors
+              if te.getPath() == closedPath
+                return null
+            @$dispatch "removeFile", @entry
   beforeDestroy: ->
     @disposables?.dispose()
   created: ->
