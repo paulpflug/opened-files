@@ -10,7 +10,7 @@
     "atom": ">=0.174.0 <2.0.0"
   },
   "dependencies": {
-    "atom-vue-component-loader": "0.0.4",
+    "atom-vue-component-loader": "0.0.5",
     "lazy.js": "^0.4.0",
     "season": "^5.2.0",
     "simple-color-picker": "0.0.6"
