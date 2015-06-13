@@ -58,20 +58,28 @@ module.exports = {
       return e.stopPropagation();
     },
     close: function(e) {
-      var i, len, pane, panePath, panes, path, results;
+      var i, len, pane, paneItem, paneItems, panePath, path, results;
       if (e != null) {
         e.stopPropagation();
       }
-      panes = atom.workspace.getPaneItems();
+      paneItems = atom.workspace.getPaneItems();
       path = this.entry.path;
       results = [];
-      for (i = 0, len = panes.length; i < len; i++) {
-        pane = panes[i];
-        if (pane.getPath) {
-          panePath = pane.getPath();
+      for (i = 0, len = paneItems.length; i < len; i++) {
+        paneItem = paneItems[i];
+        if (paneItem.getPath) {
+          panePath = paneItem.getPath();
           if (panePath === path) {
             log("destroying " + panePath);
-            results.push(pane.destroy());
+            pane = atom.workspace.paneForItem(paneItem);
+            if (pane != null ? pane.promptToSaveItem(paneItem) : void 0) {
+              if (typeof paneItem.destroy === "function") {
+                paneItem.destroy();
+              }
+              results.push(true);
+            } else {
+              results.push(void 0);
+            }
           } else {
             results.push(void 0);
           }
@@ -112,20 +120,20 @@ module.exports = {
           this.$root.removeFile(this.entry.path);
         }
       }
-      return e.stopPropagation();
+      return e != null ? e.stopPropagation() : void 0;
     },
     onClick: function(e) {
       this.$dispatch("notifySelect", this.entry.path);
       atom.workspace.open(this.entry.path, {
         searchAllPanes: true
       });
-      setTimeout(this.paintTabs, 50);
       return e.stopPropagation();
     },
     paintTabs: function() {
       var i, j, len, len1, tab, tabs;
       log("painting Tabs " + this.entry.path);
       tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
+      log("found " + tabs.length + " Tabs for " + this.entry.path);
       if (this.entry.color) {
         for (i = 0, len = tabs.length; i < len; i++) {
           tab = tabs[i];
@@ -188,15 +196,37 @@ module.exports = {
     })(this));
     this.$on("close", (function(_this) {
       return function() {
+        var ref;
         if (!_this.isPinned) {
-          return _this.close();
+          if ((ref = _this.disposables) != null) {
+            ref.dispose();
+          }
+          _this.close();
+          return setTimeout((function() {
+            return _this.$dispatch("removeFile", _this.entry);
+          }), 50);
         }
       };
     })(this));
-    return this.$on("paint", (function(_this) {
-      return function() {
-        if (_this.entry.color) {
+    this.$on("paint", (function(_this) {
+      return function(path, newColor) {
+        if (path != null) {
+          if (path === _this.entry.path) {
+            if ((newColor != null) && newColor) {
+              _this.entry.color = _this.$root["color-picker"].getRandomColor();
+              _this.$dispatch("notifyColor", _this.entry.path, _this.entry.color);
+            }
+            return _this.paintTabs();
+          }
+        } else if (_this.entry.color) {
           return _this.paintTabs();
+        }
+      };
+    })(this));
+    return this.$on("pin", (function(_this) {
+      return function(path) {
+        if ((path != null) && path === _this.entry.path) {
+          return _this.togglePin();
         }
       };
     })(this));

@@ -15,18 +15,19 @@ new class TreeManager
 
   autoHeight: =>
     log "resizing"
-    unless @openedFilesElement?
-      @treeViewElement.setAttribute "style", "height: 100%"
-      return
-    @openedFilesElement.removeAttribute "style"
-    containerHeight = @treeViewElement.parentElement.clientHeight
-    ofHeight = @openedFilesElement.scrollHeight
-    tvHeight = containerHeight - ofHeight
-    if tvHeight < containerHeight/2
-      log "half/half resizing"
-      tvHeight = containerHeight/2
-      @openedFilesElement.setAttribute "style", "height: #{tvHeight}px"
-    @treeViewElement.setAttribute "style", "height: #{tvHeight}px"
+    if @treeViewElement?
+      unless @openedFilesElement?
+        @treeViewElement.setAttribute "style", "height: 100%"
+        return
+      @openedFilesElement.removeAttribute "style"
+      containerHeight = @treeViewElement.parentElement.clientHeight
+      ofHeight = @openedFilesElement.scrollHeight
+      tvHeight = containerHeight - ofHeight
+      if tvHeight < containerHeight/2
+        log "half/half resizing"
+        tvHeight = containerHeight/2
+        @openedFilesElement.setAttribute "style", "height: #{tvHeight}px"
+      @treeViewElement.setAttribute "style", "height: #{tvHeight}px"
     @resizeRunning = false
 
   resizeRunning: false

@@ -41,20 +41,6 @@ addFolderToTree = (tree, splittedPath, path) ->
   else
     element.folders = addFolderToTree element.folders, splittedPath.slice(1), path
   return tree
-removeFileFromTree = (tree, name) ->
-  [element, tree] = getElementFromTree tree, name
-  if element? and not element.pinned
-    tree.$remove element
-  return tree
-removeFolderFromTree = (tree, splittedPath) ->
-  [element, tree] = getElementFromTree tree, splittedPath[0]
-  if splittedPath.length == 2
-    element.files = removeFileFromTree element.files, splittedPath[1]
-  else
-    element.folders = removeFolderFromTree element.folders, splittedPath.slice(1)
-  if element.folders.length == 0 and element.files.length == 0
-    tree.$remove element
-  return tree
 module.exports =
   data: ->
     filesTree: []
@@ -75,23 +61,12 @@ module.exports =
           rootElement.files = addFileToTree rootElement.files, splittedPath[0], path
         else
           rootElement.folders = addFolderToTree rootElement.folders, splittedPath, path
-    removeFile: (path) ->
-      result = atom.project.relativizePath path
-      if result?[0]?
-        rootName = result[0].split(sep).pop()
-        rootElement = Lazy(@filesTree).where(name: rootName).first()
-        if rootElement?
-          splittedPath = result[1].split(sep)
-          if splittedPath.length == 1
-            rootElement.files = removeFileFromTree rootElement.files, splittedPath[0]
-          else
-            rootElement.folders = removeFolderFromTree rootElement.folders, splittedPath
-          if rootElement.folders.length == 0 and rootElement.files.length == 0
-            @filesTree.$remove rootElement
     closeUnpinned: ->
       @$broadcast "close"
-    paint: ->
-      @$broadcast "paint"
+    pin: (path) ->
+      @$broadcast "pin", path
+    paint: (path, newColor = false) ->
+      @$broadcast "paint", path, newColor
   beforeCompile: ->
     sep = require("path").sep
     Lazy ?= require "lazy.js"

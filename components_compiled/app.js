@@ -1,5 +1,5 @@
 var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\">\n      <template v-component=\"folder\" v-repeat=\"entry: filesTree\" track-by=\"name\" class=\"directory list-nested-item project-root\">\n      </template>\n    </ol>";
-var CompositeDisposable, Lazy, addFileToTree, addFolderToTree, getElementFromTree, log, projectManager, removeFileFromTree, removeFolderFromTree, sep, settings;
+var CompositeDisposable, Lazy, addFileToTree, addFolderToTree, getElementFromTree, log, projectManager, sep, settings;
 
 Lazy = null;
 
@@ -61,29 +61,6 @@ addFolderToTree = function(tree, splittedPath, path) {
   return tree;
 };
 
-removeFileFromTree = function(tree, name) {
-  var element, ref;
-  ref = getElementFromTree(tree, name), element = ref[0], tree = ref[1];
-  if ((element != null) && !element.pinned) {
-    tree.$remove(element);
-  }
-  return tree;
-};
-
-removeFolderFromTree = function(tree, splittedPath) {
-  var element, ref;
-  ref = getElementFromTree(tree, splittedPath[0]), element = ref[0], tree = ref[1];
-  if (splittedPath.length === 2) {
-    element.files = removeFileFromTree(element.files, splittedPath[1]);
-  } else {
-    element.folders = removeFolderFromTree(element.folders, splittedPath.slice(1));
-  }
-  if (element.folders.length === 0 && element.files.length === 0) {
-    tree.$remove(element);
-  }
-  return tree;
-};
-
 module.exports = {
   data: function() {
     return {
@@ -119,32 +96,17 @@ module.exports = {
         }
       }
     },
-    removeFile: function(path) {
-      var result, rootElement, rootName, splittedPath;
-      result = atom.project.relativizePath(path);
-      if ((result != null ? result[0] : void 0) != null) {
-        rootName = result[0].split(sep).pop();
-        rootElement = Lazy(this.filesTree).where({
-          name: rootName
-        }).first();
-        if (rootElement != null) {
-          splittedPath = result[1].split(sep);
-          if (splittedPath.length === 1) {
-            rootElement.files = removeFileFromTree(rootElement.files, splittedPath[0]);
-          } else {
-            rootElement.folders = removeFolderFromTree(rootElement.folders, splittedPath);
-          }
-          if (rootElement.folders.length === 0 && rootElement.files.length === 0) {
-            return this.filesTree.$remove(rootElement);
-          }
-        }
-      }
-    },
     closeUnpinned: function() {
       return this.$broadcast("close");
     },
-    paint: function() {
-      return this.$broadcast("paint");
+    pin: function(path) {
+      return this.$broadcast("pin", path);
+    },
+    paint: function(path, newColor) {
+      if (newColor == null) {
+        newColor = false;
+      }
+      return this.$broadcast("paint", path, newColor);
     }
   },
   beforeCompile: function() {

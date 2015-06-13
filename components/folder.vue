@@ -51,12 +51,18 @@ module.exports =
       return true
     @$on "removeFile", (entry) =>
       log "removing #{entry.path}"
-      @entry.files.$remove entry
+      try
+        @entry.files.$remove entry
+      catch
+
       if @isEmpty()
         @$dispatch "removeFolder", @entry
       return false
     @$on "removeFolder", (entry) =>
-      @entry.folders.$remove entry
+      try
+        @entry.folders.$remove entry
+      catch
+        
       if @isEmpty()
         @$dispatch "removeFolder", @entry
       return false

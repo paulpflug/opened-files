@@ -9,3 +9,5 @@
 # https://atom.io/docs/latest/behind-atom-keymaps-in-depth
 'atom-workspace':
   'ctrl-alt-w': 'opened-files:close-all-but-pinned'
+  'ctrl-alt-a': 'opened-files:color-current-tab'
+  'ctrl-alt-x': 'opened-files:pin-current-tab'

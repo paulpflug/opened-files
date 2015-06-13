@@ -58,8 +58,10 @@ class ImprovedTabs
     unless @disposables?
       @disposables = new CompositeDisposable
       @disposables.add atom.workspace.onDidAddTextEditor ->
-        setTimeout improveAllTabs, 100
-      @disposables.add atom.workspace.onDidDestroyPaneItem improveAllTabs
+        setTimeout improveAllTabs, 10
+      @disposables.add atom.workspace.onDidDestroyPaneItem ->
+        log "pane Item destroyed"
+        setTimeout improveAllTabs, 10
 
   destroy: ->
     @disposables?.dispose()

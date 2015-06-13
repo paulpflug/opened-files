@@ -56,14 +56,17 @@ module.exports =
       e.stopPropagation()
     close: (e) ->
       e?.stopPropagation()
-      panes = atom.workspace.getPaneItems()
+      paneItems = atom.workspace.getPaneItems()
       path = @entry.path
-      for pane in panes
-        if pane.getPath
-          panePath = pane.getPath()
+      for paneItem in paneItems
+        if paneItem.getPath
+          panePath = paneItem.getPath()
           if panePath == path
             log "destroying #{panePath}"
-            pane.destroy()
+            pane = atom.workspace.paneForItem(paneItem)
+            if pane?.promptToSaveItem(paneItem)
+              paneItem.destroy?()
+              true
 
     paint: (e) ->
       @$root["color-picker"].getNewColor e.x, e.y, @entry.color, (newColor) =>
@@ -85,15 +88,15 @@ module.exports =
               opened = true
         unless opened
           @$root.removeFile @entry.path
-      e.stopPropagation()
+      e?.stopPropagation()
     onClick: (e) ->
       @$dispatch("notifySelect", @entry.path)
       atom.workspace.open(@entry.path,searchAllPanes: true)
-      setTimeout @paintTabs,50
       e.stopPropagation()
     paintTabs: ->
       log "painting Tabs #{@entry.path}"
       tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
+      log "found #{tabs.length} Tabs for #{@entry.path}"
       if @entry.color
         for tab in tabs
           tab.parentElement.setAttribute "style",
@@ -130,11 +133,22 @@ module.exports =
       @isSelected = path == @entry.path
       return true
     @$on "close" , =>
-      @close() unless @isPinned
-    @$on "paint", =>
-      @paintTabs() if @entry.color
-
-
+      unless @isPinned
+        @disposables?.dispose()
+        @close()
+        setTimeout (=> @$dispatch "removeFile", @entry), 50
+    @$on "paint", (path, newColor) =>
+      if path?
+        if path == @entry.path
+          if newColor? and newColor
+            @entry.color = @$root["color-picker"].getRandomColor()
+            @$dispatch("notifyColor", @entry.path, @entry.color)
+          @paintTabs()
+      else if @entry.color
+        @paintTabs()
+    @$on "pin", (path) =>
+      if path? and path == @entry.path
+        @togglePin()
   destroyed: ->
     treeManager?.autoHeight()
   attached: ->

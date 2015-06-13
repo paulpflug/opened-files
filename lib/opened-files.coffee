@@ -41,9 +41,9 @@ module.exports = new class OpenedFiles
             @improvedTabs = new ImprovedTabs
           catch
             log "loading improved tabs failed"
-    @disposables.add atom.commands.add('atom-workspace', {
+    @disposables.add atom.commands.add 'atom-workspace',
       'opened-files:toggle': => @ofView.toggle()
-    })
+      
     if atom.inDevMode()
       rootDir = new Directory(atom.packages.resolvePackagePath("opened-files"))
 

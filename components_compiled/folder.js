@@ -41,7 +41,11 @@ module.exports = {
     this.$on("removeFile", (function(_this) {
       return function(entry) {
         log("removing " + entry.path);
-        _this.entry.files.$remove(entry);
+        try {
+          _this.entry.files.$remove(entry);
+        } catch (_error) {
+
+        }
         if (_this.isEmpty()) {
           _this.$dispatch("removeFolder", _this.entry);
         }
@@ -50,7 +54,11 @@ module.exports = {
     })(this));
     return this.$on("removeFolder", (function(_this) {
       return function(entry) {
-        _this.entry.folders.$remove(entry);
+        try {
+          _this.entry.folders.$remove(entry);
+        } catch (_error) {
+
+        }
         if (_this.isEmpty()) {
           _this.$dispatch("removeFolder", _this.entry);
         }

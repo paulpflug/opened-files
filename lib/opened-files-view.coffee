@@ -42,11 +42,25 @@ class OpenedFilesView
     unless @disposables?
       @disposables = new CompositeDisposable
       @disposables.add atom.workspace.observeTextEditors (editor) =>
-        path = editor.getPath()
-        @comps.app.addFile path
-
+        if editor?.getPath?
+          path = editor.getPath()
+          @comps.app.addFile path
+      @disposables.add atom.workspace.onDidAddTextEditor ({textEditor}) =>
+        if textEditor?.getPath?
+          log "TextEditor added #{textEditor.getPath()}"
+          setTimeout (=>@comps.app.paint textEditor.getPath(), false), 50
       @disposables.add atom.commands.add 'atom-workspace',
         'opened-files:close-all-but-pinned': @comps.app.closeUnpinned
+      @disposables.add atom.commands.add 'atom-workspace',
+        'opened-files:color-current-tab': =>
+          te = atom.workspace.getActiveTextEditor()
+          if te?.getPath?
+            @comps.app.paint te.getPath(), true
+      @disposables.add atom.commands.add 'atom-workspace',
+        'opened-files:pin-current-tab': =>
+          te = atom.workspace.getActiveTextEditor()
+          if te?.getPath?
+            @comps.app.pin te.getPath()
 
   reload: =>
     log "reloading / compiling"
@@ -76,7 +90,10 @@ class OpenedFilesView
 
   destroy: ->
     @comps?.app?.$destroy true
-    @comps?["color-picker"]?.$destroy true
+    try
+      @comps?["color-picker"]?.$destroy true
+    catch
+
     @comps = null
     @disposables?.dispose()
     @disposables = null
