@@ -46,7 +46,7 @@ module.exports = new class Main
           if @openedFiles?.comps?.app?
             @openedFiles.comps.app.colorPicker = @colorPicker
             @openedFiles.comps.app.changeColor = @changeColor
-            @colorChangeCb @openedFiles.comps.app.colorChangeCb
+            @colorChangeCb? @openedFiles.comps.app.colorChangeCb
         if @compiling?
           @compiling.then load
         else
