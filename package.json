@@ -1,9 +1,12 @@
 {
   "name": "opened-files",
   "main": "./lib/main",
-  "version": "0.0.12",
+  "version": "0.1.0",
   "description": "A view of all opened files",
-  "keywords": ["opened","files"],
+  "keywords": [
+    "opened",
+    "files"
+  ],
   "repository": "https://github.com/paulpflug/opened-files",
   "license": "MIT",
   "engines": {
