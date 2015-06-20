@@ -4,10 +4,6 @@
 // for a full listing of what's available.
 @import "ui-variables";
 
-ul.tab-bar>li.tab[is="tabs-tab"] {
-  background: @tab-background-color;
-  overflow: hidden;
-}
 
 .of-highlighted,
 ul.tab-bar>li.tab.of-highlighted {
@@ -47,99 +43,4 @@ ul.tab-bar>li.tab.of-unhighlighted {
       }
     }
   }
-}
-
-.color-picker.opened-files {
-  background-color: @tool-panel-background-color;
-  position:absolute;
-  z-index: 1000;
-  border: 1px solid @tool-panel-border-color;
-  padding: 4px;
-  div.color-picker-container {
-    margin-bottom: 4px;
-  }
-}
-@file-name-top: 6px;
-@folder-name-top: -6px;
-.text-position(@offset) {
-  >span {
-    &.file {
-      top: @file-name-top - @offset;
-    }
-    &.folder{
-      top: @folder-name-top - @offset;
-    }
-  }
-}
-atom-workspace.theme-seti-ui div.improved-tabs {
-  .text-position(-4px);
-}
-
-div.improved-tabs {
-  margin-left:4px;
-  width: 100%;
-  display: inline-flex;
-
-  .text-position(0px);
-  >span {
-    position:absolute;
-    &.file {
-      color: @text-color;
-    }
-    &.folder {
-      color: @text-color-subtle;
-    }
-  }
-}
-
-// scp
-.Scp {
-  width: 175px;
-  height: 150px;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-  position: relative;
-}
-.Scp-saturation {
-  position: relative;
-  width: calc(100% - 25px);
-  height: 100%;
-  background: linear-gradient(to right, #fff 0%, #f00 100%);
-  float: left;
-  margin-right: 5px;
-}
-.Scp-brightness {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to top, #000 0%, rgba(255,255,255,0) 100%);
-}
-.Scp-sbSelector {
-  border: 2px solid;
-  border-color: #fff;
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: #fff;
-  border-radius: 10px;
-  top: -7px;
-  left: -7px;
-  box-sizing: border-box;
-  z-index: 10;
-}
-.Scp-hue {
-  width: 20px;
-  height: 100%;
-  position: relative;
-  float: left;
-  background: linear-gradient(to bottom, #f00 0%, #f0f 17%, #00f 34%, #0ff 50%, #0f0 67%, #ff0 84%, #f00 100%);
-}
-.Scp-hSelector {
-  position: absolute;
-  background: #fff;
-  border-bottom: 1px solid #000;
-  right: -3px;
-  width: 10px;
-  height: 2px;
 }

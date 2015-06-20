@@ -1,5 +1,4 @@
 treeManager = null
-log = require("./log")("tree-manager")
 module.exports =
 new class TreeManager
   treeViewElement: null
@@ -14,7 +13,7 @@ new class TreeManager
     @openedFilesElement = element
 
   autoHeight: =>
-    log "resizing"
+    @log "resizing"
     if @treeViewElement?
       unless @openedFilesElement?
         @treeViewElement.setAttribute "style", "height: 100%"
@@ -24,7 +23,7 @@ new class TreeManager
       ofHeight = @openedFilesElement.scrollHeight
       tvHeight = containerHeight - ofHeight
       if tvHeight < containerHeight/2
-        log "half/half resizing"
+        @log "half/half resizing"
         tvHeight = containerHeight/2
         @openedFilesElement.setAttribute "style", "height: #{tvHeight}px"
       @treeViewElement.setAttribute "style", "height: #{tvHeight}px"

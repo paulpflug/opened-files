@@ -4,18 +4,19 @@ A view of all opened files and other useful additions.
 
 ![opened-files](https://cloud.githubusercontent.com/assets/1881921/8092382/a8e5db72-0fb9-11e5-907a-4cce506f0cd3.gif)
 
+ - foldernames in tabs was sourced out: [foldername-tabs](https://atom.io/packages/foldername-tabs)
+
 ## Features
- - Folder names in tabs
- - Custom colors for tabs
  - Pinned tabs
- - Tree-view of opened files
+ - Tree-view and list-view of opened files
  - Highlight tab on hover of file
- - Saves pinned and colored tabs in project file (needs project-manager package)
+ - Saves pinned tabs in project file (needs project-manager package)
+ - works together with [color-tabs](https://atom.io/packages/color-tabs) and [color-picker-service](https://atom.io/packages/color-picker-service) to color individual tabs
 
 ## Known issues
 
- - Interop with other themes isn't tested
- - Not the full tab is colored (:before can't be targeted)
+ - needs a restart (`ctrl+alt+r`) when `color-tabs`/`color-picker-service` are added or removed at runtime
+ - list view isn't sorted right now
 
 ## Discuss
 

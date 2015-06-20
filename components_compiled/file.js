@@ -1,19 +1,15 @@
-var __vue_template__ = "<li class=\"file list-item\" v-on=\"click: onClick, mouseenter: highlightTab, mouseleave: unhighlightTab\">\n    <span class=\"name icon\">\n      {{entry.name}}\n    </span>\n    <span class=\"icon icon-pin\" v-class=\"unpinned: !isPinned\" v-on=\"click: togglePin\">\n    </span>\n    <span class=\"icon icon-paintcan\" v-on=\"click: paint\">\n    </span>\n    <span class=\"icon icon-x\" v-on=\"click: close\">\n    </span>\n  </li>";
-var CompositeDisposable, log, timeouts, treeManager;
-
-log = null;
-
-treeManager = null;
-
-CompositeDisposable = null;
+var __vue_template__ = "<li class=\"file list-item\" v-on=\"click: onClick, mouseenter: highlightTab, mouseleave: unhighlightTab\">\n    <span class=\"name icon\">\n      {{entry.name}}\n    </span>\n    <span class=\"icon icon-pin\" v-class=\"unpinned: !isPinned\" v-on=\"click: togglePin\">\n    </span>\n    <span class=\"icon icon-paintcan\" v-if=\"hasColorPicker\" v-on=\"click: colorPicker\">\n    </span>\n    <span class=\"icon icon-x\" v-on=\"click: close\">\n    </span>\n  </li>";
+var timeouts;
 
 timeouts = [];
 
 module.exports = {
+  replace: true,
   data: function() {
     return {
       isPinned: false,
-      disposables: null
+      hasColorPicker: false,
+      disposable: null
     };
   },
   methods: {
@@ -70,7 +66,7 @@ module.exports = {
         if (paneItem.getPath) {
           panePath = paneItem.getPath();
           if (panePath === path) {
-            log("destroying " + panePath);
+            this.$root.logFile("destroying " + panePath);
             pane = atom.workspace.paneForItem(paneItem);
             if (pane != null ? pane.promptToSaveItem(paneItem) : void 0) {
               if (typeof paneItem.destroy === "function") {
@@ -89,21 +85,41 @@ module.exports = {
       }
       return results;
     },
-    paint: function(e) {
-      this.$root["color-picker"].getNewColor(e.x, e.y, this.entry.color, (function(_this) {
+    color: function() {
+      var color, ref, ref1;
+      color = (ref = this.$root) != null ? (ref1 = ref.colors) != null ? ref1[this.entry.path] : void 0 : void 0;
+      if (color != null) {
+        if (color) {
+          return this.$el.setAttribute("style", "background-image: -webkit-linear-gradient(right, " + color + " 0%, rgba(0,0,0,0) 100%);");
+        } else {
+          return this.$el.removeAttribute("style");
+        }
+      }
+    },
+    colorPicker: function(e) {
+      var ref, ref1;
+      e.stopPropagation();
+      if (!((this.$root.colorPicker != null) && (this.$root.changeColor != null))) {
+        this.$root.$broadcast("noColorPicker");
+        atom.notifications.addError("package missing: `color-tabs` or `color-picker-service`");
+        return;
+      }
+      return this.$root.colorPicker({
+        x: e.x,
+        y: e.y,
+        color: (ref = this.$root) != null ? (ref1 = ref.colors) != null ? ref1[this.entry.path] : void 0 : void 0
+      }, (function(_this) {
         return function(newColor) {
-          _this.entry.color = newColor;
-          _this.paintTabs();
-          return _this.$dispatch("notifyColor", _this.entry.path, _this.entry.color);
+          var base;
+          return typeof (base = _this.$root).changeColor === "function" ? base.changeColor(_this.entry.path, newColor) : void 0;
         };
       })(this));
-      return e.stopPropagation();
     },
     togglePin: function(e) {
       var i, len, opened, pane, panePath, panes;
       this.isPinned = !this.isPinned;
       this.entry.pinned = this.isPinned;
-      this.$dispatch("notifyPinned", this.entry.path, this.entry.pinned);
+      this.$root.pinned(this.entry.path, this.entry.pinned);
       if (!this.isPinned) {
         opened = false;
         panes = atom.workspace.getPaneItems();
@@ -117,50 +133,21 @@ module.exports = {
           }
         }
         if (!opened) {
-          this.$root.removeFile(this.entry.path);
+          this.$dispatch("removeFile", this.entry);
         }
       }
       return e != null ? e.stopPropagation() : void 0;
     },
     onClick: function(e) {
-      this.$dispatch("notifySelect", this.entry.path);
+      this.$root.selected(this.entry.path);
       atom.workspace.open(this.entry.path, {
         searchAllPanes: true
       });
       return e.stopPropagation();
-    },
-    paintTabs: function() {
-      var i, j, len, len1, tab, tabs;
-      log("painting Tabs " + this.entry.path);
-      tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
-      log("found " + tabs.length + " Tabs for " + this.entry.path);
-      if (this.entry.color) {
-        for (i = 0, len = tabs.length; i < len; i++) {
-          tab = tabs[i];
-          tab.parentElement.setAttribute("style", "background-image: -webkit-linear-gradient(top, " + this.entry.color + " 0%, rgba(0,0,0,0) 100%);");
-        }
-        return this.$el.setAttribute("style", "background-image: -webkit-linear-gradient(right, " + this.entry.color + " 0%, rgba(0,0,0,0) 100%);");
-      } else {
-        for (j = 0, len1 = tabs.length; j < len1; j++) {
-          tab = tabs[j];
-          tab.parentElement.removeAttribute("style");
-        }
-        return this.$el.removeAttribute("style");
-      }
     }
   },
   beforeCompile: function() {
-    if (log == null) {
-      log = require("./../lib/log")("file-comp");
-    }
-    if (treeManager == null) {
-      treeManager = require("./../lib/tree-manager");
-    }
-    if (CompositeDisposable == null) {
-      CompositeDisposable = require('atom').CompositeDisposable;
-    }
-    this.disposables = new CompositeDisposable;
-    return this.disposables.add(atom.workspace.onDidDestroyPaneItem((function(_this) {
+    return this.disposable = atom.workspace.onDidDestroyPaneItem((function(_this) {
       return function(arg) {
         var closedPath, i, index, item, len, pane, ref, remainingTextEditors, te;
         item = arg.item, pane = arg.pane, index = arg.index;
@@ -180,13 +167,15 @@ module.exports = {
           }
         }
       };
-    })(this)));
+    })(this));
   },
   beforeDestroy: function() {
     var ref;
-    return (ref = this.disposables) != null ? ref.dispose() : void 0;
+    this.$root.logFile("beforeDestroy", 2);
+    return (ref = this.disposable) != null ? ref.dispose() : void 0;
   },
   created: function() {
+    this.$root.logFile("created", 2);
     this.isPinned = this.entry.pinned;
     this.$on("selected", (function(_this) {
       return function(path) {
@@ -196,49 +185,53 @@ module.exports = {
     })(this));
     this.$on("close", (function(_this) {
       return function() {
-        var ref;
         if (!_this.isPinned) {
-          if ((ref = _this.disposables) != null) {
-            ref.dispose();
-          }
-          _this.close();
-          return setTimeout((function() {
-            return _this.$dispatch("removeFile", _this.entry);
-          }), 50);
+          return _this.close();
         }
       };
     })(this));
-    this.$on("paint", (function(_this) {
-      return function(path, newColor) {
-        if (path != null) {
-          if (path === _this.entry.path) {
-            if ((newColor != null) && newColor) {
-              _this.entry.color = _this.$root["color-picker"].getRandomColor();
-              _this.$dispatch("notifyColor", _this.entry.path, _this.entry.color);
-            }
-            return _this.paintTabs();
-          }
-        } else if (_this.entry.color) {
-          return _this.paintTabs();
-        }
-      };
-    })(this));
-    return this.$on("pin", (function(_this) {
+    this.$on("pin", (function(_this) {
       return function(path) {
         if ((path != null) && path === _this.entry.path) {
           return _this.togglePin();
         }
       };
     })(this));
+    this.$on("noColorPicker", (function(_this) {
+      return function() {
+        return _this.hasColorPicker = false;
+      };
+    })(this));
+    this.hasColorPicker = this.$root.colorPicker != null;
+    return this.$on("color", (function(_this) {
+      return function(path) {
+        var ref;
+        if (path === _this.entry.path) {
+          if ((ref = _this.$root) != null) {
+            ref.logFile("got new color", 2);
+          }
+          return _this.color();
+        }
+      };
+    })(this));
+  },
+  compiled: function() {
+    var ref;
+    if ((ref = this.$root) != null) {
+      ref.logFile("compiled", 2);
+    }
+    return this.color();
   },
   destroyed: function() {
-    return treeManager != null ? treeManager.autoHeight() : void 0;
+    var ref, ref1;
+    if ((ref = this.$root) != null) {
+      ref.logFile("destroyed", 2);
+    }
+    return (ref1 = this.$root) != null ? ref1.resize() : void 0;
   },
   attached: function() {
-    if (this.entry.color) {
-      this.paintTabs();
-    }
-    return treeManager != null ? treeManager.autoHeight() : void 0;
+    this.$root.logFile("attached", 2);
+    return this.$root.resize();
   }
 };
 

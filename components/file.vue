@@ -10,7 +10,7 @@
       v-class="unpinned: !isPinned"
       v-on="click: togglePin">
     </span>
-    <span class="icon icon-paintcan" v-on="click: paint">
+    <span class="icon icon-paintcan" v-if="hasColorPicker" v-on="click: colorPicker">
     </span>
     <span class="icon icon-x" v-on="click: close">
     </span>
@@ -19,17 +19,16 @@
 </template>
 
 <script lang="coffee">
-log = null
-treeManager = null
-CompositeDisposable = null
 timeouts = []
 
 module.exports =
+  replace: true
   data: ->
     #isSelected: false
     #v-class="selected: isSelected"
     isPinned: false
-    disposables: null
+    hasColorPicker: false
+    disposable: null
   methods:
     highlightTab: (e) ->
       tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
@@ -62,22 +61,31 @@ module.exports =
         if paneItem.getPath
           panePath = paneItem.getPath()
           if panePath == path
-            log "destroying #{panePath}"
+            @$root.logFile "destroying #{panePath}"
             pane = atom.workspace.paneForItem(paneItem)
             if pane?.promptToSaveItem(paneItem)
               paneItem.destroy?()
               true
-
-    paint: (e) ->
-      @$root["color-picker"].getNewColor e.x, e.y, @entry.color, (newColor) =>
-        @entry.color = newColor
-        @paintTabs()
-        @$dispatch("notifyColor", @entry.path, @entry.color)
+    color: ->
+      color = @$root?.colors?[@entry.path]
+      if color?
+        if color
+          @$el.setAttribute "style",
+            "background-image: -webkit-linear-gradient(right, #{color} 0%, rgba(0,0,0,0) 100%);"
+        else
+          @$el.removeAttribute "style"
+    colorPicker: (e) ->
       e.stopPropagation()
+      unless @$root.colorPicker? and @$root.changeColor?
+        @$root.$broadcast "noColorPicker"
+        atom.notifications.addError("package missing: `color-tabs` or `color-picker-service`")
+        return
+      @$root.colorPicker {x:e.x, y:e.y, color:@$root?.colors?[@entry.path]}, (newColor) =>
+        @$root.changeColor? @entry.path, newColor
     togglePin: (e) ->
       @isPinned = !@isPinned
       @entry.pinned = @isPinned
-      @$dispatch("notifyPinned", @entry.path, @entry.pinned)
+      @$root.pinned @entry.path, @entry.pinned
       unless @isPinned
         opened = false
         panes = atom.workspace.getPaneItems()
@@ -87,34 +95,15 @@ module.exports =
             if panePath == @entry.path
               opened = true
         unless opened
-          @$root.removeFile @entry.path
+          @$dispatch "removeFile", @entry
       e?.stopPropagation()
     onClick: (e) ->
-      @$dispatch("notifySelect", @entry.path)
+      @$root.selected(@entry.path)
       atom.workspace.open(@entry.path,searchAllPanes: true)
       e.stopPropagation()
-    paintTabs: ->
-      log "painting Tabs #{@entry.path}"
-      tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
-      log "found #{tabs.length} Tabs for #{@entry.path}"
-      if @entry.color
-        for tab in tabs
-          tab.parentElement.setAttribute "style",
-            """
-            background-image: -webkit-linear-gradient(top, #{@entry.color} 0%, rgba(0,0,0,0) 100%);
-            """
-        @$el.setAttribute "style",
-          "background-image: -webkit-linear-gradient(right, #{@entry.color} 0%, rgba(0,0,0,0) 100%);"
-      else
-        for tab in tabs
-          tab.parentElement.removeAttribute "style"
-        @$el.removeAttribute "style"
+
   beforeCompile: ->
-    log ?= require("./../lib/log")("file-comp")
-    treeManager ?= require("./../lib/tree-manager")
-    CompositeDisposable ?= require('atom').CompositeDisposable
-    @disposables = new CompositeDisposable
-    @disposables.add atom.workspace.onDidDestroyPaneItem ({item,pane,index}) =>
+    @disposable = atom.workspace.onDidDestroyPaneItem ({item,pane,index}) =>
       if item.getPath
         closedPath = item.getPath()
         if @? and @isPinned? and @entry?.path?
@@ -126,32 +115,34 @@ module.exports =
                 return null
             @$dispatch "removeFile", @entry
   beforeDestroy: ->
-    @disposables?.dispose()
+    @$root.logFile "beforeDestroy",2
+    @disposable?.dispose()
   created: ->
+    @$root.logFile "created",2
     @isPinned = @entry.pinned
     @$on "selected", (path) =>
       @isSelected = path == @entry.path
       return true
     @$on "close" , =>
       unless @isPinned
-        @disposables?.dispose()
         @close()
-        setTimeout (=> @$dispatch "removeFile", @entry), 50
-    @$on "paint", (path, newColor) =>
-      if path?
-        if path == @entry.path
-          if newColor? and newColor
-            @entry.color = @$root["color-picker"].getRandomColor()
-            @$dispatch("notifyColor", @entry.path, @entry.color)
-          @paintTabs()
-      else if @entry.color
-        @paintTabs()
     @$on "pin", (path) =>
       if path? and path == @entry.path
         @togglePin()
+    @$on "noColorPicker", => @hasColorPicker = false
+    @hasColorPicker = @$root.colorPicker?
+    @$on "color", (path) =>
+      if path == @entry.path
+        @$root?.logFile "got new color",2
+        @color()
+  compiled: ->
+    @$root?.logFile "compiled",2
+    @color()
+
   destroyed: ->
-    treeManager?.autoHeight()
+    @$root?.logFile "destroyed",2
+    @$root?.resize()
   attached: ->
-    @paintTabs() if @entry.color
-    treeManager?.autoHeight()
+    @$root.logFile "attached",2
+    @$root.resize()
 </script>

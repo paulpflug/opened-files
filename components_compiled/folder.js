@@ -1,11 +1,10 @@
-var __vue_template__ = "<li class=\"directory list-nested-item\" v-on=\"click: onClick\" v-class=\"\n      selected: isSelected,\n      collapsed: isCollapsed,\n      expanded: !isCollapsed\n    \">\n    <div class=\"header list-item\">\n      <span class=\"name icon icon-file-directory\" data-name=\"{{entry.name}}\" data-path=\"{{entry.path}}\">{{entry.name}}</span>\n      <span class=\"icon icon-x\" v-on=\"click: close\">\n      </span>\n    </div>\n    <ol class=\"entries list-tree\">\n      <template v-component=\"folder\" v-repeat=\"entry: entry.folders\" track-by=\"name\">\n      </template>\n      <template v-component=\"file\" v-repeat=\"entry: entry.files\" track-by=\"name\">\n      </template>\n    </ol>\n  </li>";
-var log, treeManager;
-
-log = null;
+var __vue_template__ = "<li class=\"directory list-nested-item\" v-on=\"click: onClick\" v-class=\"\n      selected: isSelected,\n      collapsed: isCollapsed,\n      expanded: !isCollapsed\n    \">\n    <div class=\"header list-item\">\n      <span class=\"name icon icon-file-directory\" data-name=\"{{entry.name}}\" data-path=\"{{entry.path}}\">{{entry.name}}</span>\n      <span class=\"icon icon-x\" v-on=\"click: close\">\n      </span>\n    </div>\n    <ol class=\"entries list-tree\">\n      <folder v-repeat=\"entry: entry.folders\" track-by=\"name\">\n      </folder>\n      <file v-repeat=\"entry: entry.files\" track-by=\"name\">\n      </file>\n    </ol>\n  </li>";
+var treeManager;
 
 treeManager = null;
 
 module.exports = {
+  replace: true,
   data: function() {
     return {
       isSelected: false,
@@ -19,35 +18,42 @@ module.exports = {
       return this.$broadcast("close");
     },
     onClick: function(e) {
-      this.$dispatch("notifySelect", this.entry.name);
+      this.$root.selected(this.entry.path);
       this.toggleFolder();
       return e.stopPropagation();
     },
     toggleFolder: function() {
+      var ref;
       this.isCollapsed = !this.isCollapsed;
-      return treeManager.autoHeight();
+      return (ref = this.$root) != null ? ref.resize() : void 0;
     },
     isEmpty: function() {
+      if (typeof this === "undefined" || this === null) {
+        return true;
+      }
       return this.entry.files.length === 0 && this.entry.folders.length === 0;
     }
   },
   created: function() {
+    this.$root.logFolder("created", 2);
     this.$on("selected", (function(_this) {
-      return function(name) {
-        _this.isSelected = name === _this.entry.name;
+      return function(path) {
+        _this.isSelected = path === _this.entry.path;
         return true;
       };
     })(this));
     this.$on("removeFile", (function(_this) {
       return function(entry) {
-        log("removing " + entry.path);
+        _this.$root.logFolder("removing " + entry.path);
         try {
           _this.entry.files.$remove(entry);
         } catch (_error) {
 
         }
         if (_this.isEmpty()) {
-          _this.$dispatch("removeFolder", _this.entry);
+          if (_this != null) {
+            _this.$dispatch("removeFolder", _this.entry);
+          }
         }
         return false;
       };
@@ -60,20 +66,17 @@ module.exports = {
 
         }
         if (_this.isEmpty()) {
-          _this.$dispatch("removeFolder", _this.entry);
+          if (_this != null) {
+            _this.$dispatch("removeFolder", _this.entry);
+          }
         }
         return false;
       };
     })(this));
   },
   destroyed: function() {
-    return treeManager.autoHeight();
-  },
-  beforeCompile: function() {
-    if (log == null) {
-      log = require("./../lib/log")("file-comp");
-    }
-    return treeManager != null ? treeManager : treeManager = require("./../lib/tree-manager");
+    var ref;
+    return (ref = this.$root) != null ? ref.resize() : void 0;
   }
 };
 

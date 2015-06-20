@@ -1,101 +1,110 @@
 
 <template>
     <ol class="full-menu list-tree has-collapsable-children" tabindex="-1">
-      <template
-        v-component="folder"
+      <folder
         v-repeat="entry: filesTree"
         track-by="name"
-        class="directory list-nested-item project-root"
         >
-      </template>
+      </folder>
     </ol>
 </template>
 
 <script lang="coffee">
-Lazy = null
-log = null
+whereName = (array,name) ->
+  for obj in array
+    if obj.name == name
+      return obj
+  return null
+sortByName = (array) ->
+  array.sort (a,b) ->
+    return -1 if a.name < b.name
+    return 1 if a.name > b.name
+    return 0
 sep = null
-CompositeDisposable = null
 projectManager = null
 settings = null
+treeManager = null
 getElementFromTree = (tree, name, createElement) ->
-  element = Lazy(tree).where(name: name).first()
+  element = whereName tree, name
   if createElement?
     unless element?
       element = createElement()
       tree.push element
-      tree = Lazy(tree).sortBy("name").toArray()
+      sortByName tree
   return [element,tree]
 addFileToTree = (tree, name, path) ->
   [element, tree] = getElementFromTree tree, name, ->
-
-    pinned = settings[path]?.pinned ? false
-    color = settings[path]?.color ? false
-    {name: name, path: path, pinned: pinned, color: color}
+    return {
+      name: name
+      pinned: settings[path]?.pinned ? false
+      color: settings[path]?.color ? false
+      path: path
+    }
   return tree
-addFolderToTree = (tree, splittedPath, path) ->
-  [element, tree] = getElementFromTree tree, splittedPath[0], ->
-    {name: splittedPath[0], folders: [], files: []}
-  if splittedPath.length == 2
-    element.files = addFileToTree element.files, splittedPath[1], path
+addFolderToTree = (tree, splittedPath, index, path) ->
+  [element, tree] = getElementFromTree tree, splittedPath[index], ->
+    return {
+      name: splittedPath[index]
+      folders: []
+      files: []
+      path: splittedPath.slice(0,index+1).join("/")
+    }
+  if splittedPath.length == index+2
+    element.files = addFileToTree element.files, splittedPath[index+1], path
   else
-    element.folders = addFolderToTree element.folders, splittedPath.slice(1), path
+    element.folders = addFolderToTree element.folders, splittedPath,index+1, path
   return tree
 module.exports =
   data: ->
     filesTree: []
-    disposables: null
+    colors: {}
     expanded: false
   methods:
     addFile: (path) ->
       result = atom.project.relativizePath path
       if result?[0]?
         rootName = result[0].split(sep).pop()
-        rootElement = Lazy(@filesTree).where(name: rootName).first()
+        rootElement = whereName @filesTree, rootName
         unless rootElement?
-          rootElement = {name: rootName, path: result[0], folders: [], files: []}
+          rootElement =
+            name: rootName
+            path: result[0]
+            folders: []
+            files: []
           @filesTree.push rootElement
-          @filesTree = Lazy(@filesTree).sortBy("name").toArray()
-        splittedPath = result[1].split(sep)
-        if splittedPath.length == 1
-          rootElement.files = addFileToTree rootElement.files, splittedPath[0], path
+          sortByName @filesTree
+        if atom.config.get("opened-files.asList")
+          rootElement.files = addFileToTree rootElement.files, result[1], path
         else
-          rootElement.folders = addFolderToTree rootElement.folders, splittedPath, path
+          splittedPath = result[1].split(sep)
+          if splittedPath.length == 1
+            rootElement.files = addFileToTree rootElement.files, splittedPath[0], path
+          else
+            rootElement.folders = addFolderToTree rootElement.folders, splittedPath, 0, path
     closeUnpinned: ->
       @$broadcast "close"
     pin: (path) ->
       @$broadcast "pin", path
-    paint: (path, newColor = false) ->
-      @$broadcast "paint", path, newColor
-  beforeCompile: ->
-    sep = require("path").sep
-    Lazy ?= require "lazy.js"
-    log ?= require("./../lib/log")("app-comp")
-    projectManager ?= require("./../lib/project-manager")
-
-    settings = projectManager.getProjectSetting()
-
-    CompositeDisposable ?= require('atom').CompositeDisposable
-    @disposables = new CompositeDisposable
-  beforeDestroy: ->
-    @disposables?.dispose()
-
-  created: ->
-    @$on "notifySelect", (path) =>
-      log "event - selected #{path}"
-      @$broadcast "selected", path
-    @$on "notifyColor", (path, color) ->
-      log "event - color #{path}"
-      newSetting = settings[path] ? {}
-      newSetting.color = color
-      settings[path] = newSetting
-      projectManager.addToProjectSetting settings, false
-    @$on "notifyPinned", (path, pinned) ->
-      log "event - (un)pinned #{path}"
+    pinned: (path, pinned) ->
       newSetting = settings[path] ? {}
       newSetting.pinned = pinned
       settings[path] = newSetting
       projectManager.addToProjectSetting settings, false
+    selected: (path) ->
+      @$broadcast "selected", path
+    resize: ->
+      treeManager.autoHeight()
+    colorChangeCb: (path, color) ->
+      @log "colorChangeCb called", 2
+      @colors[path] = color
+      @$broadcast "color", path
+  beforeCompile: ->
+    sep = require("path").sep
+    projectManager ?= require("./../lib/project-manager")
+    treeManager ?= require("./../lib/tree-manager")
+    settings = projectManager.getProjectSetting()
+    @log "beforeCompile",2
+  created: ->
     @$on "removeFolder", (entry) =>
       @filesTree.$remove entry
       return false
@@ -103,4 +112,21 @@ module.exports =
     for path,obj of settings
       if obj.pinned
         @addFile path
+    @addDisposable atom.workspace.observeTextEditors (editor) =>
+      if editor?.getPath?
+        path = editor.getPath()
+        if path?
+          @log "adding #{path}",2
+          @addFile path
+    @addDisposable atom.commands.add 'atom-workspace',
+      'opened-files:close-all-but-pinned': @closeUnpinned
+      'opened-files:pin-current-tab': =>
+        te = atom.workspace.getActiveTextEditor()
+        if te?.getPath?
+          @pin te.getPath()
+    @log "compiled",2
+  ready: ->
+    @log "ready",2
+  attached: ->
+    @log "attached",2
 </script>

@@ -13,18 +13,18 @@
       </span>
     </div>
     <ol class="entries list-tree">
-      <template v-component="folder" v-repeat="entry: entry.folders" track-by="name">
-      </template>
-      <template v-component="file" v-repeat="entry: entry.files" track-by="name">
-      </template>
+      <folder v-repeat="entry: entry.folders" track-by="name">
+      </folder>
+      <file v-repeat="entry: entry.files" track-by="name">
+      </file>
     </ol>
   </li>
 </template>
 
 <script lang="coffee">
-log = null
 treeManager = null
 module.exports =
+  replace:true
   data: -> {
       isSelected: false
       isCollapsed: false
@@ -36,40 +36,38 @@ module.exports =
       @$broadcast "close"
 
     onClick: (e) ->
-      @$dispatch("notifySelect",@entry.name)
+      @$root.selected(@entry.path)
       @toggleFolder()
       e.stopPropagation()
     toggleFolder: ->
       @isCollapsed = !@isCollapsed
-      treeManager.autoHeight()
+      @$root?.resize()
     isEmpty: ->
+      return true unless @?
       return @entry.files.length == 0 and @entry.folders.length == 0
 
   created: ->
-    @$on "selected", (name) =>
-      @isSelected = name == @entry.name
+    @$root.logFolder "created",2
+    @$on "selected", (path) =>
+      @isSelected = path == @entry.path
       return true
     @$on "removeFile", (entry) =>
-      log "removing #{entry.path}"
+      @$root.logFolder "removing #{entry.path}"
       try
         @entry.files.$remove entry
       catch
 
       if @isEmpty()
-        @$dispatch "removeFolder", @entry
+        @$dispatch "removeFolder", @entry if @?
       return false
     @$on "removeFolder", (entry) =>
       try
         @entry.folders.$remove entry
       catch
-        
+
       if @isEmpty()
-        @$dispatch "removeFolder", @entry
+        @$dispatch "removeFolder", @entry if @?
       return false
   destroyed: ->
-
-    treeManager.autoHeight()
-  beforeCompile: ->
-    log ?= require("./../lib/log")("file-comp")
-    treeManager ?= require("./../lib/tree-manager")
+    @$root?.resize()
 </script>

@@ -1,22 +1,38 @@
 {
   "name": "opened-files",
-  "main": "./lib/opened-files",
+  "main": "./lib/main",
   "version": "0.0.12",
-  "description": "A view of all opened files and other useful additions",
-  "keywords": [],
+  "description": "A view of all opened files",
+  "keywords": ["opened","files"],
   "repository": "https://github.com/paulpflug/opened-files",
   "license": "MIT",
   "engines": {
     "atom": ">=0.174.0 <2.0.0"
   },
   "dependencies": {
-    "atom-vue-component-loader": "0.0.5",
-    "lazy.js": "^0.4.0",
-    "season": "^5.2.0",
-    "simple-color-picker": "0.0.6"
+    "atom-vue-component-loader": "~0.0.6",
+    "atom-simple-logger": "~0.0.1",
+    "season": "^5.3.0"
   },
   "devDependencies": {
-    "simple-reload": "0.0.4",
-    "atom-vue-component-compiler": "0.0.2"
+    "atom-package-reloader": "~0.0.2",
+    "atom-vue-component-compiler": "~0.0.4"
+  },
+  "consumedServices": {
+    "color-picker": {
+      "versions": {
+        "^0.0.1": "consumeColorPicker"
+      }
+    },
+    "color-change-cb": {
+      "versions": {
+        "^0.0.1": "consumeColorChangeCb"
+      }
+    },
+    "change-color": {
+      "versions": {
+        "^0.0.1": "consumeChangeColor"
+      }
+    }
   }
 }

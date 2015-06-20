@@ -1,87 +1,72 @@
-{CompositeDisposable, Directory} = require 'atom'
-
-log = null
-
+compile = null
+load = null
+treeManager = null
 reload = null
 
-OFView = null
-ImprovedTabs = null
+path = require "path"
 
-module.exports = new class OpenedFiles
-  ofView: null
-  improvedTabs: null
+{CompositeDisposable} = require 'atom'
+
+compTree = {
+  app:
+    "file": null
+    "folder": null
+}
+
+module.exports = class OpenedFiles
+  element: null
+  comps: null
+  log: null
   disposables: null
-  config:
-    debug:
-      type: "boolean"
-      default: false
-  activate: () ->
-    log = require("./log")("core")
-    @disposables = new CompositeDisposable
+  constructor: (logger) ->
+    @log = logger("core")
+    unless @element?
+      @element = document.createElement('div')
+      @element.classList.add('file-list')
+      @element.classList.add("opened-files")
+      treeManager ?= require "./tree-manager.coffee"
+      treeManager.log = logger "treeManager"
+      treeManager.setOpenedFilesElement @element
+    unless @disposables?
+      @disposables = new CompositeDisposable
+      @disposables.add atom.commands.add 'atom-workspace',
+        'opened-files:toggle': @toggle
+    unless @comps?
+      load ?= require "atom-vue-component-loader"
+      @comps = load compTree,
+        cwd: path.resolve path.dirname(module.filename), "../components_compiled/"
+        debug: atom.inDevMode()
+        reload: atom.inDevMode()
+      @comps.app.log = logger("app")
+      @comps.app.logFile = logger("file")
+      @comps.app.logFolder = logger("folder")
+      @comps.app.addDisposable = (obj) => @disposables.add obj
+      @log "mounting app",2
+      @comps.app.$mount(@element)
 
-    unless @ofView?
-      OFView ?= require './opened-files-view'
-      @ofView = new OFView
-      atom.packages.onDidActivatePackage (p) =>
-        if p.name == "tree-view"
-          try
-            @ofView.draw()
-          catch
-            @ofView.reload()
-            .then =>
-              try
-                @ofView.draw()
-              catch
-                log "drawing of opened files failed"
-    unless @improvedTabs?
-      ImprovedTabs ?= require "./improved-tabs.coffee"
-      atom.packages.onDidActivatePackage (p) =>
-        if p.name == "tabs"
-          try
-            @improvedTabs = new ImprovedTabs
-          catch
-            log "loading improved tabs failed"
-    @disposables.add atom.commands.add 'atom-workspace',
-      'opened-files:toggle': => @ofView.toggle()
-      
-    if atom.inDevMode()
-      rootDir = new Directory(atom.packages.resolvePackagePath("opened-files"))
 
-      @disposables.add rootDir.getSubdirectory("lib").onDidChange @redraw
-      @disposables.add rootDir.getSubdirectory("components").onDidChange @redraw
 
-  deactivate: ->
-    @disposables.dispose()
-    @ofView?.destroy()
-    @ofView = null
-    @improvedTabs?.destroy()
-    @improvedTabs = null
+    @tv = atom.packages.getActivePackage("tree-view")?.mainModule
+      .treeView.element
+    @tv?.insertBefore @element, @tv.firstChild
+    treeManager.autoHeight()
+    @log "loaded"
 
-  serialize: ->
 
-  redrawing: false
-  redraw: =>
-    log "redraw issued"
-    if @redrawing
-      log "redraw already in progress - canceled request"
-      return null
-    else
-      @redrawing = true
-      log "starting redraw"
-      setTimeout (=>@redrawing = false), 1000
-    try
-      reload ?= require "simple-reload"
-    catch
-      log "simple-reload is missing - no reloading possible"
-      return null
-    @ofView.destroy()
-    OFView = reload './opened-files-view'
-    @ofView = new OFView
-    @ofView.reload()
-    .then =>
-      @ofView.draw()
-      log "finished redraw"
-      @redrawing = false
-    @improvedTabs?.destroy()
-    ImprovedTabs = reload "./improved-tabs.coffee"
-    @improvedTabs = new ImprovedTabs
+  destroy: ->
+    @comps?.app?.$destroy true
+    @comps = null
+    @disposables?.dispose()
+    @disposables = null
+    @element?.parentNode?.removeChild?(@element)
+    @element = null
+    treeManager.autoHeight()
+    treeManager?.destroy()
+    treeManager = null
+    @log = null
+
+  toggle: =>
+    if @element?
+      @log "toggling visibility"
+      @element.classList.toggle "hidden"
+      treeManager?.autoHeight()
