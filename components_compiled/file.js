@@ -1,66 +1,47 @@
-var __vue_template__ = "<li class=\"file list-item\" v-on=\"click: onClick, mouseenter: highlightTab, mouseleave: unhighlightTab\">\n    <span class=\"name icon\">\n      {{entry.name}}\n    </span>\n    <span class=\"icon icon-pin\" v-class=\"unpinned: !isPinned\" v-on=\"click: togglePin\">\n    </span>\n    <span class=\"icon icon-paintcan\" v-if=\"hasColorPicker\" v-on=\"click: colorPicker\">\n    </span>\n    <span class=\"icon icon-x\" v-on=\"click: close\">\n    </span>\n  </li>";
-var timeouts;
-
-timeouts = [];
-
+var __vue_template__ = "<li class=\"file list-item\" v-on=\"click: onClick, mouseover: highlight, mouseleave: unhighlight\" v-class=\"\n    selected: isSelected,\n      of-highlight:isHovered &amp;&amp; shouldHighlight\n      \">\n    <span class=\"icon icon-x\" v-class=\"notHovered:!isHovered\" v-on=\"click: close\">\n    </span>\n    <span class=\"name\">\n      {{entry.name}}\n    </span>\n    <span class=\"path\" v-if=\"entry.pathIdentifier\">\n      {{entry.pathIdentifier}}\n    </span>\n    <span class=\"icon icon-paintcan\" v-if=\"isHovered &amp;&amp; hasColorPicker\" v-on=\"click: colorPicker\">\n    </span>\n  </li>";
 module.exports = {
   replace: true,
   data: function() {
     return {
-      isPinned: false,
+      isSelected: false,
       hasColorPicker: false,
+      isHovered: false,
+      shouldHighlight: atom.config.get("opened-files.highlightOnHover"),
       disposable: null
     };
   },
   methods: {
-    highlightTab: function(e) {
-      var i, j, len, len1, tab, tabs, timeout;
-      tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
-      for (i = 0, len = timeouts.length; i < len; i++) {
-        timeout = timeouts[i];
-        clearTimeout(timeout);
+    highlight: function(e) {
+      var i, len, tab, tabs;
+      e.stopPropagation();
+      if (this.shouldHighlight) {
+        tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
+        for (i = 0, len = tabs.length; i < len; i++) {
+          tab = tabs[i];
+          tab.parentNode.classList.add("of-highlight");
+        }
       }
-      timeouts = [];
-      for (j = 0, len1 = tabs.length; j < len1; j++) {
-        tab = tabs[j];
-        tab.parentNode.classList.remove("of-unhighlighted");
-        tab.parentNode.classList.add("of-highlighted");
-      }
-      this.$el.classList.remove("of-unhighlighted");
-      this.$el.classList.add("of-highlighted");
-      return e.stopPropagation();
+      return this.isHovered = true;
     },
-    unhighlightTab: function(e) {
-      var i, len, remover, tab, tabs;
-      tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
-      for (i = 0, len = tabs.length; i < len; i++) {
-        tab = tabs[i];
-        tab.parentNode.classList.remove("of-highlighted");
-        tab.parentNode.classList.add("of-unhighlighted");
-        remover = function(tab) {
-          return timeouts.push(setTimeout((function() {
-            return tab.parentNode.classList.remove("of-unhighlighted");
-          }), 300));
-        };
-        remover(tab);
+    unhighlight: function(e) {
+      var i, len, tab, tabs;
+      e.stopPropagation();
+      if (this.shouldHighlight) {
+        tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
+        for (i = 0, len = tabs.length; i < len; i++) {
+          tab = tabs[i];
+          tab.parentNode.classList.remove("of-highlight");
+        }
       }
-      this.$el.classList.remove("of-highlighted");
-      this.$el.classList.add("of-unhighlighted");
-      timeouts.push(setTimeout(((function(_this) {
-        return function() {
-          return _this.$el.classList.remove("of-unhighlighted");
-        };
-      })(this)), 300));
-      return e.stopPropagation();
+      return this.isHovered = false;
     },
     close: function(e) {
-      var i, len, pane, paneItem, paneItems, panePath, path, results;
+      var i, len, pane, paneItem, paneItems, panePath, path;
       if (e != null) {
         e.stopPropagation();
       }
       paneItems = atom.workspace.getPaneItems();
       path = this.entry.path;
-      results = [];
       for (i = 0, len = paneItems.length; i < len; i++) {
         paneItem = paneItems[i];
         if (paneItem.getPath) {
@@ -72,18 +53,13 @@ module.exports = {
               if (typeof paneItem.destroy === "function") {
                 paneItem.destroy();
               }
-              results.push(true);
-            } else {
-              results.push(void 0);
+              true;
             }
-          } else {
-            results.push(void 0);
           }
-        } else {
-          results.push(void 0);
         }
       }
-      return results;
+      this.$dispatch("removeFile", this.entry);
+      return this.$root.removePath(this.entry.path);
     },
     color: function() {
       var color, ref, ref1;
@@ -115,29 +91,6 @@ module.exports = {
         };
       })(this));
     },
-    togglePin: function(e) {
-      var i, len, opened, pane, panePath, panes;
-      this.isPinned = !this.isPinned;
-      this.entry.pinned = this.isPinned;
-      this.$root.pinned(this.entry.path, this.entry.pinned);
-      if (!this.isPinned) {
-        opened = false;
-        panes = atom.workspace.getPaneItems();
-        for (i = 0, len = panes.length; i < len; i++) {
-          pane = panes[i];
-          if (pane.getPath) {
-            panePath = pane.getPath();
-            if (panePath === this.entry.path) {
-              opened = true;
-            }
-          }
-        }
-        if (!opened) {
-          this.$dispatch("removeFile", this.entry);
-        }
-      }
-      return e != null ? e.stopPropagation() : void 0;
-    },
     onClick: function(e) {
       this.$root.selected(this.entry.path);
       atom.workspace.open(this.entry.path, {
@@ -146,29 +99,6 @@ module.exports = {
       return e.stopPropagation();
     }
   },
-  beforeCompile: function() {
-    return this.disposable = atom.workspace.onDidDestroyPaneItem((function(_this) {
-      return function(arg) {
-        var closedPath, i, index, item, len, pane, ref, remainingTextEditors, te;
-        item = arg.item, pane = arg.pane, index = arg.index;
-        if (item.getPath) {
-          closedPath = item.getPath();
-          if ((_this != null) && (_this.isPinned != null) && (((ref = _this.entry) != null ? ref.path : void 0) != null)) {
-            if (closedPath === _this.entry.path && !_this.isPinned) {
-              remainingTextEditors = atom.workspace.getTextEditors();
-              for (i = 0, len = remainingTextEditors.length; i < len; i++) {
-                te = remainingTextEditors[i];
-                if (te.getPath() === closedPath) {
-                  return null;
-                }
-              }
-              return _this.$dispatch("removeFile", _this.entry);
-            }
-          }
-        }
-      };
-    })(this));
-  },
   beforeDestroy: function() {
     var ref;
     this.$root.logFile("beforeDestroy", 2);
@@ -176,7 +106,6 @@ module.exports = {
   },
   created: function() {
     this.$root.logFile("created", 2);
-    this.isPinned = this.entry.pinned;
     this.$on("selected", (function(_this) {
       return function(path) {
         _this.isSelected = path === _this.entry.path;
@@ -185,16 +114,7 @@ module.exports = {
     })(this));
     this.$on("close", (function(_this) {
       return function() {
-        if (!_this.isPinned) {
-          return _this.close();
-        }
-      };
-    })(this));
-    this.$on("pin", (function(_this) {
-      return function(path) {
-        if ((path != null) && path === _this.entry.path) {
-          return _this.togglePin();
-        }
+        return _this.close();
       };
     })(this));
     this.$on("noColorPicker", (function(_this) {

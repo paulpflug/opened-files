@@ -3,16 +3,16 @@
     <ol class="full-menu list-tree has-collapsable-children" tabindex="-1">
       <folder
         v-repeat="entry: filesTree"
-        track-by="name"
+        track-by="path"
         >
       </folder>
     </ol>
 </template>
 
 <script lang="coffee">
-whereName = (array,name) ->
+wherePath = (array,path) ->
   for obj in array
-    if obj.name == name
+    if obj.path == path
       return obj
   return null
 sortByName = (array) ->
@@ -24,33 +24,46 @@ sep = null
 projectManager = null
 settings = null
 treeManager = null
-getElementFromTree = (tree, name, createElement) ->
-  element = whereName tree, name
+getElementFromTree = (tree, path, sort, createElement) ->
+  element = wherePath tree, path
   if createElement?
     unless element?
       element = createElement()
       tree.push element
-      sortByName tree
+      sortByName tree if sort
   return [element,tree]
-addFileToTree = (tree, name, path) ->
-  [element, tree] = getElementFromTree tree, name, ->
+addFileToTree = (tree, path, name) ->
+  pathIdentifier = ""
+  sort = true
+  unless name? # list view
+    sort = false
+    result = atom.project.relativizePath path
+    splittedPath = result[1].split(sep)
+    name = splittedPath.pop()
+    if result[0]?
+      projectPaths = atom.project.getPaths()
+      if projectPaths.length > 1
+        pathIdentifier += "#{projectPaths.indexOf(result[0])+1}"
+        pathIdentifier += sep if splittedPath.length > 0
+    pathIdentifier += splittedPath.join(sep)
+  [element, tree] = getElementFromTree tree, path, sort, ->
     return {
       name: name
-      pinned: settings[path]?.pinned ? false
-      color: settings[path]?.color ? false
       path: path
+      pathIdentifier: pathIdentifier
     }
   return tree
 addFolderToTree = (tree, splittedPath, index, path) ->
-  [element, tree] = getElementFromTree tree, splittedPath[index], ->
+  calculatedPath = splittedPath.slice(0,index+1).join("/")
+  [element, tree] = getElementFromTree tree, calculatedPath, true, ->
     return {
       name: splittedPath[index]
       folders: []
       files: []
-      path: splittedPath.slice(0,index+1).join("/")
+      path: calculatedPath
     }
   if splittedPath.length == index+2
-    element.files = addFileToTree element.files, splittedPath[index+1], path
+    element.files = addFileToTree element.files, path, splittedPath[index+1]
   else
     element.folders = addFolderToTree element.folders, splittedPath,index+1, path
   return tree
@@ -59,71 +72,92 @@ module.exports =
     filesTree: []
     colors: {}
     expanded: false
+    saving: false
   methods:
     addFile: (path) ->
-      result = atom.project.relativizePath path
-      if result?[0]?
-        rootName = result[0].split(sep).pop()
-        rootElement = whereName @filesTree, rootName
+      @log "adding #{path}",2
+      if atom.config.get("opened-files.asList")
+        rootElement = @filesTree[0]
         unless rootElement?
           rootElement =
-            name: rootName
-            path: result[0]
+            name: "Opened files"
+            path: ""
             folders: []
             files: []
           @filesTree.push rootElement
-          sortByName @filesTree
-        if atom.config.get("opened-files.asList")
-          rootElement.files = addFileToTree rootElement.files, result[1], path
-        else
+
+        rootElement.files = addFileToTree rootElement.files, path
+      else
+        result = atom.project.relativizePath path
+        if result?[0]?
+          rootName = result[0].split(sep).pop()
+          rootElement = wherePath @filesTree, result[0]
+          unless rootElement?
+            rootElement =
+              name: rootName
+              path: result[0]
+              folders: []
+              files: []
+            @filesTree.push rootElement
+            sortByName @filesTree
           splittedPath = result[1].split(sep)
           if splittedPath.length == 1
-            rootElement.files = addFileToTree rootElement.files, splittedPath[0], path
+            rootElement.files = addFileToTree rootElement.files, path, splittedPath[0]
           else
             rootElement.folders = addFolderToTree rootElement.folders, splittedPath, 0, path
-    closeUnpinned: ->
-      @$broadcast "close"
-    pin: (path) ->
-      @$broadcast "pin", path
-    pinned: (path, pinned) ->
-      newSetting = settings[path] ? {}
-      newSetting.pinned = pinned
-      settings[path] = newSetting
-      projectManager.addToProjectSetting settings, false
     selected: (path) ->
       @$broadcast "selected", path
     resize: ->
       treeManager.autoHeight()
     colorChangeCb: (path, color) ->
-      @log "colorChangeCb called", 2
-      @colors[path] = color
-      @$broadcast "color", path
+      if @?
+        @log "colorChangeCb called", 2
+        @colors[path] = color
+        @$broadcast "color", path
+    redraw: ->
+      @filesTree = []
+      for path in settings
+        @addFile path
+    removePath: (path) ->
+      i = settings.indexOf(path)
+      if i > -1
+        settings.splice(i, 1)
+        @save()
+    save: ->
+      if @saving == false
+        @saving = true
+        @log "saving",2
+        projectManager.addToProjectSetting settings, false
+        @saving = false
+      else
+        @log "delaying save", 2
+        setTimeout (=>@saving = false), 90
+        setTimeout @save, 100
   beforeCompile: ->
     sep = require("path").sep
     projectManager ?= require("./../lib/project-manager")
     treeManager ?= require("./../lib/tree-manager")
     settings = projectManager.getProjectSetting()
+    settings = [] unless Array.isArray settings
     @log "beforeCompile",2
   created: ->
     @$on "removeFolder", (entry) =>
       @filesTree.$remove entry
       return false
   compiled: ->
-    for path,obj of settings
-      if obj.pinned
-        @addFile path
+    for path in settings
+      @addFile path
     @addDisposable atom.workspace.observeTextEditors (editor) =>
       if editor?.getPath?
         path = editor.getPath()
-        if path?
-          @log "adding #{path}",2
+        if path? and settings.indexOf(path) == -1
+
           @addFile path
-    @addDisposable atom.commands.add 'atom-workspace',
-      'opened-files:close-all-but-pinned': @closeUnpinned
-      'opened-files:pin-current-tab': =>
-        te = atom.workspace.getActiveTextEditor()
-        if te?.getPath?
-          @pin te.getPath()
+          settings.push path
+          @save()
+    @addDisposable atom.config.onDidChange 'opened-files.asList', @redraw
+    @addDisposable atom.config.onDidChange 'opened-files.highlightOnHover', @redraw
+    @addDisposable atom.config.onDidChange 'opened-files.debug', @redraw
     @log "compiled",2
   ready: ->
     @log "ready",2

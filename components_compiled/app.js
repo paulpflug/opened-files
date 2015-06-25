@@ -1,11 +1,11 @@
-var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\">\n      <folder v-repeat=\"entry: filesTree\" track-by=\"name\">\n      </folder>\n    </ol>";
-var addFileToTree, addFolderToTree, getElementFromTree, projectManager, sep, settings, sortByName, treeManager, whereName;
+var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\">\n      <folder v-repeat=\"entry: filesTree\" track-by=\"path\">\n      </folder>\n    </ol>";
+var addFileToTree, addFolderToTree, getElementFromTree, projectManager, sep, settings, sortByName, treeManager, wherePath;
 
-whereName = function(array, name) {
-  var i, len, obj;
-  for (i = 0, len = array.length; i < len; i++) {
-    obj = array[i];
-    if (obj.name === name) {
+wherePath = function(array, path) {
+  var j, len, obj;
+  for (j = 0, len = array.length; j < len; j++) {
+    obj = array[j];
+    if (obj.path === path) {
       return obj;
     }
   }
@@ -32,45 +32,64 @@ settings = null;
 
 treeManager = null;
 
-getElementFromTree = function(tree, name, createElement) {
+getElementFromTree = function(tree, path, sort, createElement) {
   var element;
-  element = whereName(tree, name);
+  element = wherePath(tree, path);
   if (createElement != null) {
     if (element == null) {
       element = createElement();
       tree.push(element);
-      sortByName(tree);
+      if (sort) {
+        sortByName(tree);
+      }
     }
   }
   return [element, tree];
 };
 
-addFileToTree = function(tree, name, path) {
-  var element, ref;
-  ref = getElementFromTree(tree, name, function() {
-    var ref, ref1, ref2, ref3;
+addFileToTree = function(tree, path, name) {
+  var element, pathIdentifier, projectPaths, ref, result, sort, splittedPath;
+  pathIdentifier = "";
+  sort = true;
+  if (name == null) {
+    sort = false;
+    result = atom.project.relativizePath(path);
+    splittedPath = result[1].split(sep);
+    name = splittedPath.pop();
+    if (result[0] != null) {
+      projectPaths = atom.project.getPaths();
+      if (projectPaths.length > 1) {
+        pathIdentifier += "" + (projectPaths.indexOf(result[0]) + 1);
+        if (splittedPath.length > 0) {
+          pathIdentifier += sep;
+        }
+      }
+    }
+    pathIdentifier += splittedPath.join(sep);
+  }
+  ref = getElementFromTree(tree, path, sort, function() {
     return {
       name: name,
-      pinned: (ref = (ref1 = settings[path]) != null ? ref1.pinned : void 0) != null ? ref : false,
-      color: (ref2 = (ref3 = settings[path]) != null ? ref3.color : void 0) != null ? ref2 : false,
-      path: path
+      path: path,
+      pathIdentifier: pathIdentifier
     };
   }), element = ref[0], tree = ref[1];
   return tree;
 };
 
 addFolderToTree = function(tree, splittedPath, index, path) {
-  var element, ref;
-  ref = getElementFromTree(tree, splittedPath[index], function() {
+  var calculatedPath, element, ref;
+  calculatedPath = splittedPath.slice(0, index + 1).join("/");
+  ref = getElementFromTree(tree, calculatedPath, true, function() {
     return {
       name: splittedPath[index],
       folders: [],
       files: [],
-      path: splittedPath.slice(0, index + 1).join("/")
+      path: calculatedPath
     };
   }), element = ref[0], tree = ref[1];
   if (splittedPath.length === index + 2) {
-    element.files = addFileToTree(element.files, splittedPath[index + 1], path);
+    element.files = addFileToTree(element.files, path, splittedPath[index + 1]);
   } else {
     element.folders = addFolderToTree(element.folders, splittedPath, index + 1, path);
   }
@@ -82,50 +101,49 @@ module.exports = {
     return {
       filesTree: [],
       colors: {},
-      expanded: false
+      expanded: false,
+      saving: false
     };
   },
   methods: {
     addFile: function(path) {
       var result, rootElement, rootName, splittedPath;
-      result = atom.project.relativizePath(path);
-      if ((result != null ? result[0] : void 0) != null) {
-        rootName = result[0].split(sep).pop();
-        rootElement = whereName(this.filesTree, rootName);
+      this.log("adding " + path, 2);
+      if (atom.config.get("opened-files.asList")) {
+        rootElement = this.filesTree[0];
         if (rootElement == null) {
           rootElement = {
-            name: rootName,
-            path: result[0],
+            name: "Opened files",
+            path: "",
             folders: [],
             files: []
           };
           this.filesTree.push(rootElement);
-          sortByName(this.filesTree);
         }
-        if (atom.config.get("opened-files.asList")) {
-          return rootElement.files = addFileToTree(rootElement.files, result[1], path);
-        } else {
+        return rootElement.files = addFileToTree(rootElement.files, path);
+      } else {
+        result = atom.project.relativizePath(path);
+        if ((result != null ? result[0] : void 0) != null) {
+          rootName = result[0].split(sep).pop();
+          rootElement = wherePath(this.filesTree, result[0]);
+          if (rootElement == null) {
+            rootElement = {
+              name: rootName,
+              path: result[0],
+              folders: [],
+              files: []
+            };
+            this.filesTree.push(rootElement);
+            sortByName(this.filesTree);
+          }
           splittedPath = result[1].split(sep);
           if (splittedPath.length === 1) {
-            return rootElement.files = addFileToTree(rootElement.files, splittedPath[0], path);
+            return rootElement.files = addFileToTree(rootElement.files, path, splittedPath[0]);
           } else {
             return rootElement.folders = addFolderToTree(rootElement.folders, splittedPath, 0, path);
           }
         }
       }
-    },
-    closeUnpinned: function() {
-      return this.$broadcast("close");
-    },
-    pin: function(path) {
-      return this.$broadcast("pin", path);
-    },
-    pinned: function(path, pinned) {
-      var newSetting, ref;
-      newSetting = (ref = settings[path]) != null ? ref : {};
-      newSetting.pinned = pinned;
-      settings[path] = newSetting;
-      return projectManager.addToProjectSetting(settings, false);
     },
     selected: function(path) {
       return this.$broadcast("selected", path);
@@ -134,9 +152,45 @@ module.exports = {
       return treeManager.autoHeight();
     },
     colorChangeCb: function(path, color) {
-      this.log("colorChangeCb called", 2);
-      this.colors[path] = color;
-      return this.$broadcast("color", path);
+      if (typeof this !== "undefined" && this !== null) {
+        this.log("colorChangeCb called", 2);
+        this.colors[path] = color;
+        return this.$broadcast("color", path);
+      }
+    },
+    redraw: function() {
+      var j, len, path, results;
+      this.filesTree = [];
+      results = [];
+      for (j = 0, len = settings.length; j < len; j++) {
+        path = settings[j];
+        results.push(this.addFile(path));
+      }
+      return results;
+    },
+    removePath: function(path) {
+      var i;
+      i = settings.indexOf(path);
+      if (i > -1) {
+        settings.splice(i, 1);
+        return this.save();
+      }
+    },
+    save: function() {
+      if (this.saving === false) {
+        this.saving = true;
+        this.log("saving", 2);
+        projectManager.addToProjectSetting(settings, false);
+        return this.saving = false;
+      } else {
+        this.log("delaying save", 2);
+        setTimeout(((function(_this) {
+          return function() {
+            return _this.saving = false;
+          };
+        })(this)), 90);
+        return setTimeout(this.save, 100);
+      }
     }
   },
   beforeCompile: function() {
@@ -148,6 +202,9 @@ module.exports = {
       treeManager = require("./../lib/tree-manager");
     }
     settings = projectManager.getProjectSetting();
+    if (!Array.isArray(settings)) {
+      settings = [];
+    }
     return this.log("beforeCompile", 2);
   },
   created: function() {
@@ -159,36 +216,26 @@ module.exports = {
     })(this));
   },
   compiled: function() {
-    var obj, path;
-    for (path in settings) {
-      obj = settings[path];
-      if (obj.pinned) {
-        this.addFile(path);
-      }
+    var j, len, path;
+    for (j = 0, len = settings.length; j < len; j++) {
+      path = settings[j];
+      this.addFile(path);
     }
     this.addDisposable(atom.workspace.observeTextEditors((function(_this) {
       return function(editor) {
         if ((editor != null ? editor.getPath : void 0) != null) {
           path = editor.getPath();
-          if (path != null) {
-            _this.log("adding " + path, 2);
-            return _this.addFile(path);
+          if ((path != null) && settings.indexOf(path) === -1) {
+            _this.addFile(path);
+            settings.push(path);
+            return _this.save();
           }
         }
       };
     })(this)));
-    this.addDisposable(atom.commands.add('atom-workspace', {
-      'opened-files:close-all-but-pinned': this.closeUnpinned,
-      'opened-files:pin-current-tab': (function(_this) {
-        return function() {
-          var te;
-          te = atom.workspace.getActiveTextEditor();
-          if ((te != null ? te.getPath : void 0) != null) {
-            return _this.pin(te.getPath());
-          }
-        };
-      })(this)
-    }));
+    this.addDisposable(atom.config.onDidChange('opened-files.asList', this.redraw));
+    this.addDisposable(atom.config.onDidChange('opened-files.highlightOnHover', this.redraw));
+    this.addDisposable(atom.config.onDidChange('opened-files.debug', this.redraw));
     return this.log("compiled", 2);
   },
   ready: function() {

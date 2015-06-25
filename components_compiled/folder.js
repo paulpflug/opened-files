@@ -1,4 +1,4 @@
-var __vue_template__ = "<li class=\"directory list-nested-item\" v-on=\"click: onClick\" v-class=\"\n      selected: isSelected,\n      collapsed: isCollapsed,\n      expanded: !isCollapsed\n    \">\n    <div class=\"header list-item\">\n      <span class=\"name icon icon-file-directory\" data-name=\"{{entry.name}}\" data-path=\"{{entry.path}}\">{{entry.name}}</span>\n      <span class=\"icon icon-x\" v-on=\"click: close\">\n      </span>\n    </div>\n    <ol class=\"entries list-tree\">\n      <folder v-repeat=\"entry: entry.folders\" track-by=\"name\">\n      </folder>\n      <file v-repeat=\"entry: entry.files\" track-by=\"name\">\n      </file>\n    </ol>\n  </li>";
+var __vue_template__ = "<li class=\"directory list-nested-item\" v-on=\"click: onClick,mouseover: highlight, mouseout: unhighlight\" v-class=\"\n      selected: isSelected,\n      collapsed: isCollapsed,\n      expanded: !isCollapsed,\n      of-highlight:isHovered &amp;&amp; shouldHighlight\n    \">\n    <div class=\"header list-item\" v-on=\"mouseenter: highlight, mouseleave: unhighlight\">\n      <span class=\"name\" data-name=\"{{entry.name}}\" data-path=\"{{entry.path}}\">{{entry.name}}</span>\n      <span v-class=\"hidden: !isHovered\" class=\"icon icon-x\" v-on=\"click: close\">\n      </span>\n    </div>\n    <ol class=\"entries list-tree\">\n      <folder v-repeat=\"entry: entry.folders\" track-by=\"path\">\n      </folder>\n      <file v-repeat=\"entry: entry.files\" track-by=\"path\">\n      </file>\n    </ol>\n  </li>";
 var treeManager;
 
 treeManager = null;
@@ -9,10 +9,20 @@ module.exports = {
     return {
       isSelected: false,
       isCollapsed: false,
+      isHovered: false,
+      shouldHighlight: atom.config.get("opened-files.highlightOnHover"),
       color: false
     };
   },
   methods: {
+    highlight: function(e) {
+      e.stopPropagation();
+      return this.isHovered = true;
+    },
+    unhighlight: function(e) {
+      e.stopPropagation();
+      return this.isHovered = false;
+    },
     close: function(e) {
       e.stopPropagation();
       return this.$broadcast("close");
@@ -23,9 +33,8 @@ module.exports = {
       return e.stopPropagation();
     },
     toggleFolder: function() {
-      var ref;
       this.isCollapsed = !this.isCollapsed;
-      return (ref = this.$root) != null ? ref.resize() : void 0;
+      return setTimeout(this.$root.resize, 1);
     },
     isEmpty: function() {
       if (typeof this === "undefined" || this === null) {
@@ -44,12 +53,12 @@ module.exports = {
     })(this));
     this.$on("removeFile", (function(_this) {
       return function(entry) {
+        var ref;
         _this.$root.logFolder("removing " + entry.path);
         try {
           _this.entry.files.$remove(entry);
-        } catch (_error) {
-
-        }
+        } catch (_error) {}
+        setTimeout((ref = _this.$root) != null ? ref.resize : void 0, 1);
         if (_this.isEmpty()) {
           if (_this != null) {
             _this.$dispatch("removeFolder", _this.entry);
@@ -60,11 +69,11 @@ module.exports = {
     })(this));
     return this.$on("removeFolder", (function(_this) {
       return function(entry) {
+        var ref;
         try {
           _this.entry.folders.$remove(entry);
-        } catch (_error) {
-
-        }
+        } catch (_error) {}
+        setTimeout((ref = _this.$root) != null ? ref.resize : void 0, 1);
         if (_this.isEmpty()) {
           if (_this != null) {
             _this.$dispatch("removeFolder", _this.entry);

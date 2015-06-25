@@ -33,23 +33,21 @@ module.exports = new class ProjectManager
       return false
   getProjectSetting: =>
     project = @getProject()
-    if project and project.settings and project.settings["opened-files"]
-      return project.settings["opened-files"]
+    if project and project["opened-files"]
+      return project["opened-files"]
     else
-      return false
+      return []
 
   addToProjectSetting: (settings,notifications = true) =>
     project = @getProject()
     if project
-      project.settings ?= {}
-      project.settings["opened-files"] ?= {}
-      for k,v of settings
-        project.settings["opened-files"][k] = v
-      @CSON.writeFile @file(), @projects, (err) ->
+      project["opened-files"] = settings
+      try
+        @CSON.writeFileSync @file(), @projects
         if notifications
-          unless err
-            atom.notifications?.addSuccess "Settings of #{project.title} has been saved"
-          else
-            atom.notifications?.addError "#{project.title} could not be saved to #{@file()}"
+          atom.notifications?.addSuccess "Settings of #{project.title} has been saved"
+      catch
+        if notifications
+          atom.notifications?.addError "#{project.title} could not be saved to #{@file()}"
     else if notifications
       atom.notifications?.addError "Current project wasn't found in #{@file()}"

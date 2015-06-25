@@ -2,7 +2,14 @@
 
 A view of all opened files and other useful additions.
 
-![opened-files](https://cloud.githubusercontent.com/assets/1881921/8092382/a8e5db72-0fb9-11e5-907a-4cce506f0cd3.gif)
+List:
+
+![opened-files-list](https://cloud.githubusercontent.com/assets/1881921/8344463/62cb82d4-1ae2-11e5-8dfe-991c09798d97.png)
+
+Tree:
+
+![opened-files-tree](https://cloud.githubusercontent.com/assets/1881921/8344445/0b957ac4-1ae2-11e5-9b51-e5619d780d6a.png)
+
 
  - foldernames in tabs was sourced out: [foldername-tabs](https://atom.io/packages/foldername-tabs)
 
@@ -16,11 +23,16 @@ A view of all opened files and other useful additions.
 ## Known issues
 
  - needs a restart (`ctrl+alt+r`) when `color-tabs`/`color-picker-service` are added or removed at runtime
- - list view isn't sorted right now
 
 ## Discuss
 
 Let me hear your ideas for improvement [here](https://discuss.atom.io/t/announce-opened-files)
+
+## Developing
+
+You can play with the package by running `npm install` in its directory.
+Two dependencies will be fetched, which will do the vue -> js compiling and the package reloading on change.
+Both will only be active in dev mode.
 
 ## License
 Copyright (c) 2015 Paul Pflugradt

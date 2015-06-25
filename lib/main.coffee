@@ -9,6 +9,9 @@ pkgName = "opened-files"
 module.exports = new class Main
   openedFiles: null
   config:
+    highlightOnHover:
+      type: "boolean"
+      default: true
     asList:
       type: "boolean"
       default: true
@@ -43,6 +46,7 @@ module.exports = new class Main
             @openedFiles = new OpenedFiles(logger)
           catch e
             log "loading core failed"
+            log e.message()
           if @openedFiles?.comps?.app?
             @openedFiles.comps.app.colorPicker = @colorPicker
             @openedFiles.comps.app.changeColor = @changeColor
@@ -65,7 +69,6 @@ module.exports = new class Main
     @openedFiles?.destroy()
     reloader?.dispose()
     reloader = null
-    load = null
     log = null
     compile = null
 

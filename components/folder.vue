@@ -1,21 +1,22 @@
 <template>
   <li
     class="directory list-nested-item"
-    v-on="click: onClick"
+    v-on="click: onClick,mouseover: highlight, mouseout: unhighlight"
     v-class="
       selected: isSelected,
       collapsed: isCollapsed,
-      expanded: !isCollapsed
+      expanded: !isCollapsed,
+      of-highlight:isHovered && shouldHighlight
     ">
-    <div class="header list-item">
-      <span class="name icon icon-file-directory" data-name={{entry.name}} data-path={{entry.path}}>{{entry.name}}</span>
-      <span class="icon icon-x" v-on="click: close">
+    <div class="header list-item" v-on="mouseenter: highlight, mouseleave: unhighlight">
+      <span class="name" data-name={{entry.name}} data-path={{entry.path}}>{{entry.name}}</span>
+      <span v-class="hidden: !isHovered" class="icon icon-x" v-on="click: close">
       </span>
     </div>
     <ol class="entries list-tree">
-      <folder v-repeat="entry: entry.folders" track-by="name">
+      <folder v-repeat="entry: entry.folders" track-by="path">
       </folder>
-      <file v-repeat="entry: entry.files" track-by="name">
+      <file v-repeat="entry: entry.files" track-by="path">
       </file>
     </ol>
   </li>
@@ -28,9 +29,19 @@ module.exports =
   data: -> {
       isSelected: false
       isCollapsed: false
+      isHovered: false
+      shouldHighlight: atom.config.get("opened-files.highlightOnHover")
       color: false
     }
   methods:
+    highlight: (e) ->
+      e.stopPropagation()
+      @isHovered = true
+
+    unhighlight: (e) ->
+      e.stopPropagation()
+      @isHovered = false
+
     close: (e) ->
       e.stopPropagation()
       @$broadcast "close"
@@ -41,7 +52,7 @@ module.exports =
       e.stopPropagation()
     toggleFolder: ->
       @isCollapsed = !@isCollapsed
-      @$root?.resize()
+      setTimeout @$root.resize, 1
     isEmpty: ->
       return true unless @?
       return @entry.files.length == 0 and @entry.folders.length == 0
@@ -55,16 +66,14 @@ module.exports =
       @$root.logFolder "removing #{entry.path}"
       try
         @entry.files.$remove entry
-      catch
-
+      setTimeout @$root?.resize,1
       if @isEmpty()
         @$dispatch "removeFolder", @entry if @?
       return false
     @$on "removeFolder", (entry) =>
       try
         @entry.folders.$remove entry
-      catch
-
+      setTimeout @$root?.resize, 1
       if @isEmpty()
         @$dispatch "removeFolder", @entry if @?
       return false
