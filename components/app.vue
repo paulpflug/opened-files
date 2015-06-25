@@ -1,6 +1,11 @@
 
 <template>
-    <ol class="full-menu list-tree has-collapsable-children" tabindex="-1">
+
+    <ol class="full-menu list-tree has-collapsable-children" tabindex="-1"
+    v-on="mouseenter: hover, mouseleave: unhover"
+    >
+    <div v-class="hidden: !isHovered" class="save icon icon-bookmark" v-on="click: save">
+    </div>
       <folder
         v-repeat="entry: filesTree"
         track-by="path"
@@ -73,7 +78,16 @@ module.exports =
     colors: {}
     expanded: false
     saving: false
+    savedSettings: []
+    isHovered:false
   methods:
+    hover: (e) ->
+
+      @isHovered = true
+
+    unhover: (e) ->
+
+      @isHovered = false
     addFile: (path) ->
       @log "adding #{path}",2
       if atom.config.get("opened-files.asList")
@@ -84,6 +98,7 @@ module.exports =
             path: ""
             folders: []
             files: []
+            isRoot: true
           @filesTree.push rootElement
 
         rootElement.files = addFileToTree rootElement.files, path
@@ -122,23 +137,28 @@ module.exports =
       i = settings.indexOf(path)
       if i > -1
         settings.splice(i, 1)
-        @save()
     save: ->
       if @saving == false
         @saving = true
         @log "saving",2
-        projectManager.addToProjectSetting settings, false
+        projectManager.addToProjectSetting settings
+        @savedSettings = settings.slice()
         @saving = false
       else
         @log "delaying save", 2
         setTimeout (=>@saving = false), 90
         setTimeout @save, 100
+    closeUnsaved: ->
+      for path in settings
+        if @savedSettings.indexOf(path) == -1
+          @$broadcast "close", path
   beforeCompile: ->
     sep = require("path").sep
     projectManager ?= require("./../lib/project-manager")
     treeManager ?= require("./../lib/tree-manager")
     settings = projectManager.getProjectSetting()
     settings = [] unless Array.isArray settings
+    @savedSettings = settings.slice()
     @log "beforeCompile",2
   created: ->
     @$on "removeFolder", (entry) =>
@@ -151,10 +171,10 @@ module.exports =
       if editor?.getPath?
         path = editor.getPath()
         if path? and settings.indexOf(path) == -1
-
           @addFile path
           settings.push path
-          @save()
+    @addDisposable atom.commands.add 'atom-workspace',
+      'opened-files:close-all-but-saved': @closeUnsaved
     @addDisposable atom.config.onDidChange 'opened-files.asList', @redraw
     @addDisposable atom.config.onDidChange 'opened-files.highlightOnHover', @redraw
     @addDisposable atom.config.onDidChange 'opened-files.debug', @redraw

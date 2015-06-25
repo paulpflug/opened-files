@@ -45,9 +45,9 @@ module.exports = new class ProjectManager
       try
         @CSON.writeFileSync @file(), @projects
         if notifications
-          atom.notifications?.addSuccess "Settings of #{project.title} has been saved"
+          atom.notifications?.addSuccess "Opened files have been saved"
       catch
         if notifications
-          atom.notifications?.addError "#{project.title} could not be saved to #{@file()}"
+          atom.notifications?.addError "Opened files could not be saved to #{@file()}"
     else if notifications
       atom.notifications?.addError "Current project wasn't found in #{@file()}"

@@ -1,4 +1,4 @@
-var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\">\n      <folder v-repeat=\"entry: filesTree\" track-by=\"path\">\n      </folder>\n    </ol>";
+var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\" v-on=\"mouseenter: hover, mouseleave: unhover\">\n    <div v-class=\"hidden: !isHovered\" class=\"save icon icon-bookmark\" v-on=\"click: save\">\n    </div>\n      <folder v-repeat=\"entry: filesTree\" track-by=\"path\">\n      </folder>\n    </ol>";
 var addFileToTree, addFolderToTree, getElementFromTree, projectManager, sep, settings, sortByName, treeManager, wherePath;
 
 wherePath = function(array, path) {
@@ -102,10 +102,18 @@ module.exports = {
       filesTree: [],
       colors: {},
       expanded: false,
-      saving: false
+      saving: false,
+      savedSettings: [],
+      isHovered: false
     };
   },
   methods: {
+    hover: function(e) {
+      return this.isHovered = true;
+    },
+    unhover: function(e) {
+      return this.isHovered = false;
+    },
     addFile: function(path) {
       var result, rootElement, rootName, splittedPath;
       this.log("adding " + path, 2);
@@ -116,7 +124,8 @@ module.exports = {
             name: "Opened files",
             path: "",
             folders: [],
-            files: []
+            files: [],
+            isRoot: true
           };
           this.filesTree.push(rootElement);
         }
@@ -172,15 +181,15 @@ module.exports = {
       var i;
       i = settings.indexOf(path);
       if (i > -1) {
-        settings.splice(i, 1);
-        return this.save();
+        return settings.splice(i, 1);
       }
     },
     save: function() {
       if (this.saving === false) {
         this.saving = true;
         this.log("saving", 2);
-        projectManager.addToProjectSetting(settings, false);
+        projectManager.addToProjectSetting(settings);
+        this.savedSettings = settings.slice();
         return this.saving = false;
       } else {
         this.log("delaying save", 2);
@@ -191,6 +200,19 @@ module.exports = {
         })(this)), 90);
         return setTimeout(this.save, 100);
       }
+    },
+    closeUnsaved: function() {
+      var j, len, path, results;
+      results = [];
+      for (j = 0, len = settings.length; j < len; j++) {
+        path = settings[j];
+        if (this.savedSettings.indexOf(path) === -1) {
+          results.push(this.$broadcast("close", path));
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
     }
   },
   beforeCompile: function() {
@@ -205,6 +227,7 @@ module.exports = {
     if (!Array.isArray(settings)) {
       settings = [];
     }
+    this.savedSettings = settings.slice();
     return this.log("beforeCompile", 2);
   },
   created: function() {
@@ -227,12 +250,14 @@ module.exports = {
           path = editor.getPath();
           if ((path != null) && settings.indexOf(path) === -1) {
             _this.addFile(path);
-            settings.push(path);
-            return _this.save();
+            return settings.push(path);
           }
         }
       };
     })(this)));
+    this.addDisposable(atom.commands.add('atom-workspace', {
+      'opened-files:close-all-but-saved': this.closeUnsaved
+    }));
     this.addDisposable(atom.config.onDidChange('opened-files.asList', this.redraw));
     this.addDisposable(atom.config.onDidChange('opened-files.highlightOnHover', this.redraw));
     this.addDisposable(atom.config.onDidChange('opened-files.debug', this.redraw));

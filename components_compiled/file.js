@@ -1,4 +1,4 @@
-var __vue_template__ = "<li class=\"file list-item\" v-on=\"click: onClick, mouseover: highlight, mouseleave: unhighlight\" v-class=\"\n    selected: isSelected,\n      of-highlight:isHovered &amp;&amp; shouldHighlight\n      \">\n    <span class=\"icon icon-x\" v-class=\"notHovered:!isHovered\" v-on=\"click: close\">\n    </span>\n    <span class=\"name\">\n      {{entry.name}}\n    </span>\n    <span class=\"path\" v-if=\"entry.pathIdentifier\">\n      {{entry.pathIdentifier}}\n    </span>\n    <span class=\"icon icon-paintcan\" v-if=\"isHovered &amp;&amp; hasColorPicker\" v-on=\"click: colorPicker\">\n    </span>\n  </li>";
+var __vue_template__ = "<li class=\"file list-item\" v-on=\"click: onClick, mouseenter: highlight, mouseleave: unhighlight\" v-class=\"\n    selected: isSelected,\n      of-highlight:isHovered &amp;&amp; shouldHighlight,\n      of-hovered: isHovered\n      \">\n    <span class=\"icon icon-x\" v-class=\"notHovered:!isHovered\" v-on=\"click: close\">\n    </span>\n    <span class=\"name\">\n      {{entry.name}}\n    </span>\n    <span class=\"path\" v-if=\"entry.pathIdentifier\">\n      {{entry.pathIdentifier}}\n    </span>\n    <span class=\"icon icon-paintcan\" v-if=\"isHovered &amp;&amp; hasColorPicker\" v-on=\"click: colorPicker\">\n    </span>\n  </li>";
 module.exports = {
   replace: true,
   data: function() {
@@ -13,7 +13,6 @@ module.exports = {
   methods: {
     highlight: function(e) {
       var i, len, tab, tabs;
-      e.stopPropagation();
       if (this.shouldHighlight) {
         tabs = document.querySelectorAll(".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='" + (this.entry.path.replace(/\\/g, "\\\\")) + "']");
         for (i = 0, len = tabs.length; i < len; i++) {
@@ -113,8 +112,14 @@ module.exports = {
       };
     })(this));
     this.$on("close", (function(_this) {
-      return function() {
-        return _this.close();
+      return function(path) {
+        if (path != null) {
+          if (path === _this.entry.path) {
+            return _this.close();
+          }
+        } else {
+          return _this.close();
+        }
       };
     })(this));
     this.$on("noColorPicker", (function(_this) {

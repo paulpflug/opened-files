@@ -1,4 +1,4 @@
-var __vue_template__ = "<li class=\"directory list-nested-item\" v-on=\"click: onClick,mouseover: highlight, mouseout: unhighlight\" v-class=\"\n      selected: isSelected,\n      collapsed: isCollapsed,\n      expanded: !isCollapsed,\n      of-highlight:isHovered &amp;&amp; shouldHighlight\n    \">\n    <div class=\"header list-item\" v-on=\"mouseenter: highlight, mouseleave: unhighlight\">\n      <span class=\"name\" data-name=\"{{entry.name}}\" data-path=\"{{entry.path}}\">{{entry.name}}</span>\n      <span v-class=\"hidden: !isHovered\" class=\"icon icon-x\" v-on=\"click: close\">\n      </span>\n    </div>\n    <ol class=\"entries list-tree\">\n      <folder v-repeat=\"entry: entry.folders\" track-by=\"path\">\n      </folder>\n      <file v-repeat=\"entry: entry.files\" track-by=\"path\">\n      </file>\n    </ol>\n  </li>";
+var __vue_template__ = "<li class=\"directory list-nested-item\" v-on=\"mouseenter: hover, mouseleave: unhover,mouseover: highlight, mouseout: unhighlight\" v-class=\"\n      selected: isSelected,\n      collapsed: isCollapsed,\n      expanded: !isCollapsed,\n      of-highlight:isHighlight &amp;&amp; shouldHighlight\n    \">\n    <div class=\"header list-item folder\" v-on=\"click: onClick\">\n      <span class=\"name\" data-name=\"{{entry.name}}\" data-path=\"{{entry.path}}\">{{entry.name}}</span>\n\n      <span v-class=\"hidden: !isHovered\" class=\"icon icon-x\" v-on=\"click: close\">\n      </span>\n    </div>\n    <ol class=\"entries list-tree\" v-on=\"mouseover: unhighlight\">\n      <folder v-repeat=\"entry: entry.folders\" track-by=\"path\">\n      </folder>\n      <file v-repeat=\"entry: entry.files\" track-by=\"path\">\n      </file>\n    </ol>\n  </li>";
 var treeManager;
 
 treeManager = null;
@@ -11,23 +11,32 @@ module.exports = {
       isCollapsed: false,
       isHovered: false,
       shouldHighlight: atom.config.get("opened-files.highlightOnHover"),
+      isHighlight: false,
       color: false
     };
   },
   methods: {
-    highlight: function(e) {
-      e.stopPropagation();
+    hover: function(e) {
       return this.isHovered = true;
     },
-    unhighlight: function(e) {
+    unhover: function(e) {
       e.stopPropagation();
       return this.isHovered = false;
     },
+    highlight: function(e) {
+      return this.isHighlight = true;
+    },
+    unhighlight: function(e) {
+      e.stopPropagation();
+      return this.isHighlight = false;
+    },
     close: function(e) {
+      this.$root.logFolder("closing", 2);
       e.stopPropagation();
       return this.$broadcast("close");
     },
     onClick: function(e) {
+      this.$root.logFolder("selecting", 2);
       this.$root.selected(this.entry.path);
       this.toggleFolder();
       return e.stopPropagation();

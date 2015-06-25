@@ -1,10 +1,11 @@
 <template>
   <li
     class="file list-item"
-    v-on="click: onClick, mouseover: highlight, mouseleave: unhighlight"
+    v-on="click: onClick, mouseenter: highlight, mouseleave: unhighlight"
     v-class="
     selected: isSelected,
-      of-highlight:isHovered && shouldHighlight
+      of-highlight:isHovered && shouldHighlight,
+      of-hovered: isHovered
       "
     >
     <span class="icon icon-x"
@@ -34,7 +35,7 @@ module.exports =
     disposable: null
   methods:
     highlight: (e) ->
-      e.stopPropagation()
+
       if @shouldHighlight
         tabs = document.querySelectorAll ".tab-bar>li.tab[data-type='TextEditor']>div.title[data-path='#{@entry.path.replace(/\\/g,"\\\\")}']"
         for tab in tabs
@@ -93,7 +94,11 @@ module.exports =
     @$on "selected", (path) =>
       @isSelected = path == @entry.path
       return true
-    @$on "close" , =>
+    @$on "close" , (path) =>
+      if path?
+        if path == @entry.path
+          @close()
+      else
         @close()
     @$on "noColorPicker", => @hasColorPicker = false
     @hasColorPicker = @$root.colorPicker?
