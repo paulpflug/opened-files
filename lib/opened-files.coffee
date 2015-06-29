@@ -53,6 +53,7 @@ module.exports = class OpenedFiles
 
   destroy: ->
     @comps?.app?.$destroy true
+    @comps?.app = null
     @comps = null
     @disposables?.dispose()
     @disposables = null

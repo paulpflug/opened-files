@@ -122,7 +122,7 @@ module.exports =
     resize: ->
       treeManager.autoHeight()
     colorChangeCb: (path, color) ->
-      if @?
+      if @? and @colors?
         @log "colorChangeCb called", 2
         @colors[path] = color
         @$broadcast "color", path

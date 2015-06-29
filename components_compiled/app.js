@@ -161,7 +161,7 @@ module.exports = {
       return treeManager.autoHeight();
     },
     colorChangeCb: function(path, color) {
-      if (typeof this !== "undefined" && this !== null) {
+      if ((typeof this !== "undefined" && this !== null) && (this.colors != null)) {
         this.log("colorChangeCb called", 2);
         this.colors[path] = color;
         return this.$broadcast("color", path);

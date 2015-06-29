@@ -50,7 +50,7 @@ module.exports = new class Main
           if @openedFiles?.comps?.app?
             @openedFiles.comps.app.colorPicker = @colorPicker
             @openedFiles.comps.app.changeColor = @changeColor
-            @colorChangeCb? @openedFiles.comps.app.colorChangeCb
+            @cbHandler = @colorChangeCb? @openedFiles.comps.app.colorChangeCb
         if @compiling?
           @compiling.then load
         else
@@ -70,6 +70,10 @@ module.exports = new class Main
     @onceActivated?.dispose?()
     @openedFiles?.destroy()
     @openedFiles = null
+    @colorPicker = null
+    @changeColor = null
+    @cbHandler?.dispose?()
+    @colorChangeCb = null
     if atom.inDevMode()
       reloader?.dispose()
       reloader = null
@@ -79,8 +83,11 @@ module.exports = new class Main
       OpenedFiles = null
 
   consumeColorPicker: (colorPicker) =>
+    log? "consuming colorPicker"
     @colorPicker = colorPicker
   consumeChangeColor: (changeColor) =>
+    log? "consuming changeColor"
     @changeColor = changeColor
   consumeColorChangeCb: (colorChangeCb) =>
+    log? "consuming colorChangeCb"
     @colorChangeCb = colorChangeCb
