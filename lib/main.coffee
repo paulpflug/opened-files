@@ -21,13 +21,14 @@ module.exports = new class Main
       minimum: 0
 
   activate: ->
-    setTimeout (->
-      reloaderSettings = pkg:pkgName,folders:["lib","styles","components"]
-      try
-        reloader ?= require("atom-package-reloader")(reloaderSettings)
-      ),500
+    if atom.inDevMode()
+      setTimeout (->
+        reloaderSettings = pkg:pkgName,folders:["lib","styles","components"]
+        try
+          reloader ?= require("atom-package-reloader")(reloaderSettings)
+        ),500
     unless log?
-      logger = require("atom-simple-logger")(pkg:pkgName)
+      logger ?= require("atom-simple-logger")(pkg:pkgName)
       log = logger("main")
       log "activating"
     if atom.inDevMode()
@@ -37,7 +38,6 @@ module.exports = new class Main
       if compile?
         @compiling = compile ["app","file","folder"]
     unless @openedFiles?
-
       compileAndLoad = =>
         load = =>
           log "loading core"
@@ -46,7 +46,7 @@ module.exports = new class Main
             @openedFiles = new OpenedFiles(logger)
           catch e
             log "loading core failed"
-            log e.message()
+            log e.message if e?.message?
           if @openedFiles?.comps?.app?
             @openedFiles.comps.app.colorPicker = @colorPicker
             @openedFiles.comps.app.changeColor = @changeColor
@@ -56,8 +56,10 @@ module.exports = new class Main
         else
           load()
       if atom.packages.isPackageActive("tree-view")
+        log "tree-view already loaded"
         compileAndLoad()
       else
+        log "waiting for tree-view to load"
         @onceActivated = atom.packages.onDidActivatePackage (p) =>
           if p.name == "tree-view"
             compileAndLoad()
@@ -67,10 +69,14 @@ module.exports = new class Main
     log "deactivating"
     @onceActivated?.dispose?()
     @openedFiles?.destroy()
-    reloader?.dispose()
-    reloader = null
-    log = null
-    compile = null
+    @openedFiles = null
+    if atom.inDevMode()
+      reloader?.dispose()
+      reloader = null
+      log = null
+      logger = null
+      compile = null
+      OpenedFiles = null
 
   consumeColorPicker: (colorPicker) =>
     @colorPicker = colorPicker

@@ -82,11 +82,8 @@ module.exports =
     isHovered:false
   methods:
     hover: (e) ->
-
       @isHovered = true
-
     unhover: (e) ->
-
       @isHovered = false
     addFile: (path) ->
       @log "adding #{path}",2

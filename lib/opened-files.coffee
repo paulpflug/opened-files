@@ -44,8 +44,6 @@ module.exports = class OpenedFiles
       @log "mounting app",2
       @comps.app.$mount(@element)
 
-
-
     @tv = atom.packages.getActivePackage("tree-view")?.mainModule
       .treeView.element
     @tv?.insertBefore @element, @tv.firstChild
@@ -60,7 +58,7 @@ module.exports = class OpenedFiles
     @disposables = null
     @element?.parentNode?.removeChild?(@element)
     @element = null
-    treeManager.autoHeight()
+    treeManager?.autoHeight()
     treeManager?.destroy()
     treeManager = null
     @log = null
