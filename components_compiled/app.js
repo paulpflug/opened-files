@@ -261,6 +261,7 @@ module.exports = {
     this.addDisposable(atom.config.onDidChange('opened-files.asList', this.redraw));
     this.addDisposable(atom.config.onDidChange('opened-files.highlightOnHover', this.redraw));
     this.addDisposable(atom.config.onDidChange('opened-files.debug', this.redraw));
+    this.addDisposable(atom.config.observe('opened-files.colorStyle', this.redraw));
     return this.log("compiled", 2);
   },
   ready: function() {

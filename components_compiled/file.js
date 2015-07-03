@@ -7,6 +7,7 @@ module.exports = {
       hasColorPicker: false,
       isHovered: false,
       shouldHighlight: atom.config.get("opened-files.highlightOnHover"),
+      colorStyle: atom.config.get("opened-files.colorStyle"),
       disposable: null
     };
   },
@@ -61,11 +62,31 @@ module.exports = {
       return this.$root.removePath(this.entry.path);
     },
     color: function() {
-      var color, ref, ref1;
+      var color, css, ref, ref1, text_color;
       color = (ref = this.$root) != null ? (ref1 = ref.colors) != null ? ref1[this.entry.path] : void 0 : void 0;
       if (color != null) {
         if (color) {
-          return this.$el.setAttribute("style", "background-image: -webkit-linear-gradient(right, " + color + " 0%, rgba(0,0,0,0) 100%);");
+          css = (function() {
+            switch (this.colorStyle) {
+              case "gradient":
+                return "background-image: -webkit-linear-gradient(right, " + color + " 0%, rgba(0,0,0,0) 100%);";
+              case "border":
+                return "border-right: solid 6px " + color + ";";
+              case "solid":
+                return "background: " + color + ";";
+              default:
+                return "";
+            }
+          }).call(this);
+          if (this.colorStyle === "solid") {
+            if (parseInt(color.replace('#', ''), 16) > 0xffffff / 2) {
+              text_color = "black";
+            } else {
+              text_color = "white";
+            }
+            css += "color: " + text_color + ";";
+          }
+          return this.$el.setAttribute("style", css);
         } else {
           return this.$el.removeAttribute("style");
         }

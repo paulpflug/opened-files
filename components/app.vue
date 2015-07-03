@@ -175,6 +175,7 @@ module.exports =
     @addDisposable atom.config.onDidChange 'opened-files.asList', @redraw
     @addDisposable atom.config.onDidChange 'opened-files.highlightOnHover', @redraw
     @addDisposable atom.config.onDidChange 'opened-files.debug', @redraw
+    @addDisposable atom.config.observe 'opened-files.colorStyle', @redraw
     @log "compiled",2
   ready: ->
     @log "ready",2

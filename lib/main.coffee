@@ -10,15 +10,26 @@ module.exports = new class Main
   openedFiles: null
   config:
     highlightOnHover:
+      title: "Highlighting"
+      description: "Highlights file entry and tab on hovering"
       type: "boolean"
       default: true
     asList:
+      title: "Opened file as List"
+      description: "If unchecked will display a tree view"
       type: "boolean"
       default: true
+    colorStyle:
+      title: "Color style"
+      description: "works only in conjunction with the color-tabs package"
+      type: "string"
+      default: "gradient"
+      enum: ["gradient","border","solid"]
     debug:
       type: "integer"
       default: 0
       minimum: 0
+
 
   activate: ->
     if atom.inDevMode()
@@ -85,9 +96,14 @@ module.exports = new class Main
   consumeColorPicker: (colorPicker) =>
     log? "consuming colorPicker"
     @colorPicker = colorPicker
+    @openedFiles?.comps?.app?.colorPicker = @colorPicker
   consumeChangeColor: (changeColor) =>
     log? "consuming changeColor"
     @changeColor = changeColor
+    @openedFiles?.comps?.app?.changeColor = @changeColor
   consumeColorChangeCb: (colorChangeCb) =>
     log? "consuming colorChangeCb"
     @colorChangeCb = colorChangeCb
+    @cbHandler?.dispose?()
+    if @openedFiles?.comps?.app?
+      @cbHandler = @colorChangeCb @openedFiles.comps.app.colorChangeCb

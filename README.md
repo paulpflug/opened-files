@@ -14,7 +14,8 @@ Tree:
  - foldernames in tabs was sourced out: [foldername-tabs](https://atom.io/packages/foldername-tabs)
 
 ## Features
- - Pinned tabs
+ - Pinned tabs (save list)
+ - close all but saved files (`ctrl+alt+w`)
  - Tree-view and list-view of opened files
  - Highlight tab on hover of file
  - Saves pinned tabs in project file (needs project-manager package)
@@ -22,7 +23,8 @@ Tree:
 
 ## Known issues
 
- - needs a restart (`ctrl+alt+r`) when `color-tabs`/`color-picker-service` are added or removed at runtime
+ - [double clicking on a preview file doesn't clear the preview](https://github.com/paulpflug/opened-files/issues/12)
+ - [preview tabs shouldn't be added to the list of opened files](https://github.com/paulpflug/opened-files/issues/11)
 
 ## Discuss
 
@@ -30,9 +32,13 @@ Let me hear your ideas for improvement [here](https://discuss.atom.io/t/announce
 
 ## Developing
 
-You can play with the package by running `npm install` in its directory.
-Two dependencies will be fetched, which will do the vue -> js compiling and the package reloading on change.
-Both will only be active in dev mode.
+Run `npm install` in the package directory.
+
+Open it in atom in dev mode.
+
+For debugging set the debug field in package settings to the needed debug level.
+
+Should autoreload the package on changes in `lib` and `styles` folders
 
 ## License
 Copyright (c) 2015 Paul Pflugradt

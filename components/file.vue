@@ -32,6 +32,7 @@ module.exports =
     hasColorPicker: false
     isHovered: false
     shouldHighlight: atom.config.get("opened-files.highlightOnHover")
+    colorStyle: atom.config.get("opened-files.colorStyle")
     disposable: null
   methods:
     highlight: (e) ->
@@ -69,8 +70,18 @@ module.exports =
       color = @$root?.colors?[@entry.path]
       if color?
         if color
-          @$el.setAttribute "style",
-            "background-image: -webkit-linear-gradient(right, #{color} 0%, rgba(0,0,0,0) 100%);"
+          css = switch @colorStyle
+            when "gradient" then "background-image: -webkit-linear-gradient(right, #{color} 0%, rgba(0,0,0,0) 100%);"
+            when "border" then "border-right: solid 6px #{color};"
+            when "solid" then  "background: #{color};"
+            else ""
+          if @colorStyle == "solid"
+            if parseInt(color.replace('#', ''), 16) > 0xffffff/2
+              text_color = "black"
+            else
+              text_color = "white"
+            css += "color: #{text_color};"
+          @$el.setAttribute "style", css
         else
           @$el.removeAttribute "style"
     colorPicker: (e) ->
