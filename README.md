@@ -30,6 +30,10 @@ Tree:
 
 Let me hear your ideas for improvement [here](https://discuss.atom.io/t/announce-opened-files)
 
+## Where to find the settings
+
+![opened-settings](https://cloud.githubusercontent.com/assets/1881921/8569100/457d7db2-2574-11e5-96b0-a6ed026090d7.png)
+
 ## Developing
 
 Run `npm install` in the package directory.

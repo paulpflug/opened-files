@@ -29,6 +29,11 @@ module.exports = new class Main
       type: "integer"
       default: 0
       minimum: 0
+    mfpIdent:
+      title: "Multi-folder project identifier"
+      type: "integer"
+      default: "0"
+      description: "length of the identifier, if set to 0 will use numbers instead"
 
 
   activate: ->

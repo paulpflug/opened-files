@@ -1,3 +1,7 @@
+## 0.2.5
+* Added ability to use a short name instead of a number for
+  multi folder projects - thx @averrin
+
 ## 0.2.4
 
 * added option to change color style of file entries

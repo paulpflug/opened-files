@@ -1,4 +1,4 @@
-
+// out: ../components_compiled/
 <template>
 
     <ol class="full-menu list-tree has-collapsable-children" tabindex="-1"
@@ -29,6 +29,7 @@ sep = null
 projectManager = null
 settings = null
 treeManager = null
+abbreviate = null
 getElementFromTree = (tree, path, sort, createElement) ->
   element = wherePath tree, path
   if createElement?
@@ -48,7 +49,15 @@ addFileToTree = (tree, path, name) ->
     if result[0]?
       projectPaths = atom.project.getPaths()
       if projectPaths.length > 1
-        pathIdentifier += "#{projectPaths.indexOf(result[0])+1}"
+        mfpIdent = atom.config.get("opened-files.mfpIdent")
+        if mfpIdent <= 0
+          pathIdentifier += "#{projectPaths.indexOf(result[0])+1}"
+        else
+          pathIdentifier += abbreviate result[0].split(sep).pop(), {
+            length: mfpIdent
+            keepSeparators: true
+            strict: false
+          }
         pathIdentifier += sep if splittedPath.length > 0
     pathIdentifier += splittedPath.join(sep)
   [element, tree] = getElementFromTree tree, path, sort, ->
@@ -153,6 +162,7 @@ module.exports =
     sep = require("path").sep
     projectManager ?= require("./../lib/project-manager")
     treeManager ?= require("./../lib/tree-manager")
+    abbreviate ?= require "abbreviate"
     settings = projectManager.getProjectSetting()
     settings = [] unless Array.isArray settings
     @savedSettings = settings.slice()
@@ -175,7 +185,8 @@ module.exports =
     @addDisposable atom.config.onDidChange 'opened-files.asList', @redraw
     @addDisposable atom.config.onDidChange 'opened-files.highlightOnHover', @redraw
     @addDisposable atom.config.onDidChange 'opened-files.debug', @redraw
-    @addDisposable atom.config.observe 'opened-files.colorStyle', @redraw
+    @addDisposable atom.config.onDidChange 'opened-files.mfpIdent', @redraw
+    @addDisposable atom.config.onDidChange 'opened-files.colorStyle', @redraw
     @log "compiled",2
   ready: ->
     @log "ready",2

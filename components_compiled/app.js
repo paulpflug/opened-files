@@ -1,5 +1,5 @@
 var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\" v-on=\"mouseenter: hover, mouseleave: unhover\">\n    <div v-class=\"hidden: !isHovered\" class=\"save icon icon-bookmark\" v-on=\"click: save\">\n    </div>\n      <folder v-repeat=\"entry: filesTree\" track-by=\"path\">\n      </folder>\n    </ol>";
-var addFileToTree, addFolderToTree, getElementFromTree, projectManager, sep, settings, sortByName, treeManager, wherePath;
+var abbreviate, addFileToTree, addFolderToTree, getElementFromTree, projectManager, sep, settings, sortByName, treeManager, wherePath;
 
 wherePath = function(array, path) {
   var j, len, obj;
@@ -32,6 +32,8 @@ settings = null;
 
 treeManager = null;
 
+abbreviate = null;
+
 getElementFromTree = function(tree, path, sort, createElement) {
   var element;
   element = wherePath(tree, path);
@@ -48,7 +50,7 @@ getElementFromTree = function(tree, path, sort, createElement) {
 };
 
 addFileToTree = function(tree, path, name) {
-  var element, pathIdentifier, projectPaths, ref, result, sort, splittedPath;
+  var element, mfpIdent, pathIdentifier, projectPaths, ref, result, sort, splittedPath;
   pathIdentifier = "";
   sort = true;
   if (name == null) {
@@ -59,7 +61,16 @@ addFileToTree = function(tree, path, name) {
     if (result[0] != null) {
       projectPaths = atom.project.getPaths();
       if (projectPaths.length > 1) {
-        pathIdentifier += "" + (projectPaths.indexOf(result[0]) + 1);
+        mfpIdent = atom.config.get("opened-files.mfpIdent");
+        if (mfpIdent <= 0) {
+          pathIdentifier += "" + (projectPaths.indexOf(result[0]) + 1);
+        } else {
+          pathIdentifier += abbreviate(result[0].split(sep).pop(), {
+            length: mfpIdent,
+            keepSeparators: true,
+            strict: false
+          });
+        }
         if (splittedPath.length > 0) {
           pathIdentifier += sep;
         }
@@ -223,6 +234,9 @@ module.exports = {
     if (treeManager == null) {
       treeManager = require("./../lib/tree-manager");
     }
+    if (abbreviate == null) {
+      abbreviate = require("abbreviate");
+    }
     settings = projectManager.getProjectSetting();
     if (!Array.isArray(settings)) {
       settings = [];
@@ -261,7 +275,8 @@ module.exports = {
     this.addDisposable(atom.config.onDidChange('opened-files.asList', this.redraw));
     this.addDisposable(atom.config.onDidChange('opened-files.highlightOnHover', this.redraw));
     this.addDisposable(atom.config.onDidChange('opened-files.debug', this.redraw));
-    this.addDisposable(atom.config.observe('opened-files.colorStyle', this.redraw));
+    this.addDisposable(atom.config.onDidChange('opened-files.mfpIdent', this.redraw));
+    this.addDisposable(atom.config.onDidChange('opened-files.colorStyle', this.redraw));
     return this.log("compiled", 2);
   },
   ready: function() {

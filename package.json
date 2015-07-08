@@ -15,7 +15,8 @@
   "dependencies": {
     "atom-vue-component-loader": "~0.0.6",
     "atom-simple-logger": "~0.0.1",
-    "season": "^5.3.0"
+    "season": "^5.3.0",
+    "abbreviate": "~0.0.2"
   },
   "devDependencies": {
     "atom-package-reloader": "~0.0.2",
