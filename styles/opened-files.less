@@ -68,6 +68,12 @@ ul.tab-bar>li.tab.of-highlight:after {
         z-index: 10;
         margin-left: .5em;
       }
+      &.list-nested-item {
+        .list-tree.entries {
+          max-height: 25vh;
+          overflow: auto;
+        }
+      }
     }
     .file {
       .icon-paintcan {
