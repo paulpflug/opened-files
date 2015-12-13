@@ -28,7 +28,6 @@ sortByName = (array) ->
 sep = null
 projectManager = null
 settings = null
-treeManager = null
 abbreviate = null
 getElementFromTree = (tree, path, sort, createElement) ->
   element = wherePath tree, path
@@ -128,8 +127,6 @@ module.exports =
             rootElement.folders = addFolderToTree rootElement.folders, splittedPath, 0, path
     selected: (path) ->
       @$broadcast "selected", path
-    resize: ->
-      treeManager.autoHeight()
     colorChangeCb: (path, color) ->
       if @? and @colors?
         @log "colorChangeCb called", 2
@@ -161,7 +158,6 @@ module.exports =
   beforeCompile: ->
     sep = require("path").sep
     projectManager ?= require("./../lib/project-manager")
-    treeManager ?= require("./../lib/tree-manager")
     abbreviate ?= require "abbreviate"
     settings = projectManager.getProjectSetting()
     settings = [] unless Array.isArray settings

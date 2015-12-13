@@ -169,15 +169,11 @@ module.exports = {
     return this.color();
   },
   destroyed: function() {
-    var ref, ref1;
-    if ((ref = this.$root) != null) {
-      ref.logFile("destroyed", 2);
-    }
-    return (ref1 = this.$root) != null ? ref1.resize() : void 0;
+    var ref;
+    return (ref = this.$root) != null ? ref.logFile("destroyed", 2) : void 0;
   },
   attached: function() {
-    this.$root.logFile("attached", 2);
-    return this.$root.resize();
+    return this.$root.logFile("attached", 2);
   }
 };
 

@@ -1,5 +1,5 @@
 var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\" v-on=\"mouseenter: hover, mouseleave: unhover\">\n    <div v-class=\"hidden: !isHovered\" class=\"save icon icon-bookmark\" v-on=\"click: save\">\n    </div>\n      <folder v-repeat=\"entry: filesTree\" track-by=\"path\">\n      </folder>\n    </ol>";
-var abbreviate, addFileToTree, addFolderToTree, getElementFromTree, projectManager, sep, settings, sortByName, treeManager, wherePath;
+var abbreviate, addFileToTree, addFolderToTree, getElementFromTree, projectManager, sep, settings, sortByName, wherePath;
 
 wherePath = function(array, path) {
   var j, len, obj;
@@ -29,8 +29,6 @@ sep = null;
 projectManager = null;
 
 settings = null;
-
-treeManager = null;
 
 abbreviate = null;
 
@@ -168,9 +166,6 @@ module.exports = {
     selected: function(path) {
       return this.$broadcast("selected", path);
     },
-    resize: function() {
-      return treeManager.autoHeight();
-    },
     colorChangeCb: function(path, color) {
       if ((typeof this !== "undefined" && this !== null) && (this.colors != null)) {
         this.log("colorChangeCb called", 2);
@@ -230,9 +225,6 @@ module.exports = {
     sep = require("path").sep;
     if (projectManager == null) {
       projectManager = require("./../lib/project-manager");
-    }
-    if (treeManager == null) {
-      treeManager = require("./../lib/tree-manager");
     }
     if (abbreviate == null) {
       abbreviate = require("abbreviate");

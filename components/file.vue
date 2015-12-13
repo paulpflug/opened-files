@@ -123,8 +123,6 @@ module.exports =
 
   destroyed: ->
     @$root?.logFile "destroyed",2
-    @$root?.resize()
   attached: ->
     @$root.logFile "attached",2
-    @$root.resize()
 </script>

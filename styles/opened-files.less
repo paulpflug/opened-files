@@ -32,9 +32,11 @@ ul.tab-bar>li.tab.of-highlight:after {
   background-color: @tree-view-background-color;
   border-bottom: 1px solid @syntax-wrap-guide-color;
   border-right: 1px solid @syntax-wrap-guide-color;
+  overflow: auto;
+  flex: 0 1 auto;
   >ol.list-tree {
     font-size: 11px;
-    overflow: auto;
+
     height: 100%;
     span.icon {
       display:inline-block;

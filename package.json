@@ -10,7 +10,7 @@
   "repository": "https://github.com/paulpflug/opened-files",
   "license": "MIT",
   "engines": {
-    "atom": ">=0.174.0 <2.0.0"
+    "atom": ">=1.1.0 <2.0.0"
   },
   "dependencies": {
     "atom-vue-component-loader": "~0.0.6",

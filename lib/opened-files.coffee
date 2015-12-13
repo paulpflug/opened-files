@@ -1,6 +1,5 @@
 compile = null
 load = null
-treeManager = null
 reload = null
 
 path = require "path"
@@ -24,9 +23,6 @@ module.exports = class OpenedFiles
       @element = document.createElement('div')
       @element.classList.add('file-list')
       @element.classList.add("opened-files")
-      treeManager ?= require "./tree-manager.coffee"
-      treeManager.log = logger "treeManager"
-      treeManager.setOpenedFilesElement @element
     unless @disposables?
       @disposables = new CompositeDisposable
       @disposables.add atom.commands.add 'atom-workspace',
@@ -47,7 +43,6 @@ module.exports = class OpenedFiles
     @tv = atom.packages.getActivePackage("tree-view")?.mainModule
       .treeView.element
     @tv?.insertBefore @element, @tv.firstChild
-    treeManager.autoHeight()
     @log "loaded"
 
 
@@ -59,13 +54,9 @@ module.exports = class OpenedFiles
     @disposables = null
     @element?.parentNode?.removeChild?(@element)
     @element = null
-    treeManager?.autoHeight()
-    treeManager?.destroy()
-    treeManager = null
     @log = null
 
   toggle: =>
     if @element?
       @log "toggling visibility"
       @element.classList.toggle "hidden"
-      treeManager?.autoHeight()
