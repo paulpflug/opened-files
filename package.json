@@ -1,7 +1,7 @@
 {
   "name": "opened-files",
   "main": "./lib/main",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "A view of all opened files",
   "keywords": [
     "opened",
