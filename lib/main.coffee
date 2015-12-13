@@ -61,14 +61,18 @@ module.exports = new class Main
             OpenedFiles ?= require "./#{pkgName}"
             @openedFiles = new OpenedFiles(logger)
           catch e
-            log "loading core failed"
-            log e.message if e?.message?
+            if atom.inDevMode()
+              log "loading core failed"
+              log e.message if e?.message?
+            else
+              throw e
           if @openedFiles?.comps?.app?
             @openedFiles.comps.app.colorPicker = @colorPicker
             @openedFiles.comps.app.changeColor = @changeColor
             @cbHandler = @colorChangeCb? @openedFiles.comps.app.colorChangeCb
         if @compiling?
           @compiling.then load
+          .catch throw
         else
           load()
       if atom.packages.isPackageActive("tree-view")
