@@ -174,7 +174,7 @@ module.exports =
       if editor?.getPath?
         path = editor.getPath()
         if path? and settings.indexOf(path) == -1
-          @addFile path
+          setTimeout (=> @addFile path), 350 # wait for double click
           settings.push path
     @addDisposable atom.commands.add 'atom-workspace',
       'opened-files:close-all-but-saved': @closeUnsaved

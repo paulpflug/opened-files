@@ -255,7 +255,9 @@ module.exports = {
         if ((editor != null ? editor.getPath : void 0) != null) {
           path = editor.getPath();
           if ((path != null) && settings.indexOf(path) === -1) {
-            _this.addFile(path);
+            setTimeout((function() {
+              return _this.addFile(path);
+            }), 350);
             return settings.push(path);
           }
         }
