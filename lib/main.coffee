@@ -72,7 +72,7 @@ module.exports = new class Main
             @cbHandler = @colorChangeCb? @openedFiles.comps.app.colorChangeCb
         if @compiling?
           @compiling.then load
-          .catch throw
+          .catch (e) -> throw e
         else
           load()
       if atom.packages.isPackageActive("tree-view")

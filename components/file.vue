@@ -1,3 +1,4 @@
+// out: ../components_compiled/
 <template>
   <li
     class="file list-item"
