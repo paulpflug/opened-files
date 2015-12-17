@@ -1,3 +1,5 @@
+# Currently broken! I will work it over once [#9165](https://github.com/atom/atom/issues/9165) got resolved
+
 # opened-files package
 
 A view of all opened files and other useful additions.
