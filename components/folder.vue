@@ -2,25 +2,28 @@
 <template>
   <li
     class="directory list-nested-item"
-    v-on="mouseenter: hover, mouseleave: unhover,mouseover: highlight, mouseout: unhighlight"
-    v-class="
+    @mouseenter="hover"
+    @mouseleave="unhover"
+    @mouseover="highlight"
+    @mouseout="unhighlight"
+    :class="{
       selected: isSelected,
       collapsed: isCollapsed,
       expanded: !isCollapsed,
-      of-highlight:isHighlight && shouldHighlight
-    ">
+      'of-highlight':isHighlight && shouldHighlight
+    }">
     <div class="header list-item folder"
-    v-on="click: onClick"
+    @click="onClick"
     >
       <span class="name" data-name={{entry.name}} data-path={{entry.path}}>{{entry.name}}</span>
 
-      <span v-class="hidden: !isHovered" class="icon icon-x" v-on="click: close">
+      <span :class="{hidden: !isHovered}" class="icon icon-x" @click="close">
       </span>
     </div>
-    <ol class="entries list-tree" v-on="mouseover: unhighlight">
-      <folder v-repeat="entry: entry.folders" track-by="path">
+    <ol class="entries list-tree" @mouseover="unhighlight">
+      <folder :entry="entry" v-for="entry in entry.folders" track-by="path">
       </folder>
-      <file v-repeat="entry: entry.files" track-by="path">
+      <file :entry="entry" v-for="entry in entry.files" track-by="path">
       </file>
     </ol>
   </li>
@@ -29,15 +32,22 @@
 <script lang="coffee">
 treeManager = null
 module.exports =
+  name: "folder"
+  components:
+    "file": require "./file"
   replace:true
-  data: -> {
-      isSelected: false
-      isCollapsed: false
-      isHovered: false
-      shouldHighlight: atom.config.get("opened-files.highlightOnHover")
-      isHighlight: false
-      color: false
-    }
+  props:
+    entry:
+      type: Object
+  data: ->
+    disposable: null
+    isSelected: false
+    isCollapsed: false
+    isHovered: false
+    shouldHighlight: atom.config.get("opened-files.highlightOnHover")
+    isHighlight: false
+    color: false
+    log: ->
   methods:
     hover: (e) ->
 
@@ -55,11 +65,11 @@ module.exports =
       @isHighlight = false
 
     close: (e) ->
-      @$root.logFolder "closing",2
+      @log "closing",2
       e.stopPropagation()
       @$broadcast "close"
     onClick: (e) ->
-      @$root.logFolder "selecting",2
+      @log "selecting",2
       @$root.selected(@entry.path)
       @toggleFolder()
       e.stopPropagation()
@@ -69,27 +79,33 @@ module.exports =
     isEmpty: ->
       return true unless @?
       return @entry.files.length == 0 and @entry.folders.length == 0
-
+  compiled: ->
+    @log = @$root.logger("file")
+    @log "compiled",2
+    {CompositeDisposable} = require 'atom'
+    @disposables = new CompositeDisposable
+    @disposables.add atom.config.onDidChange 'opened-files.highlightOnHover', =>
+      @shouldHighlight = atom.config.get("opened-files.highlightOnHover")
   created: ->
-    @$root.logFolder "created",2
+    @log "created",2
     @$on "selected", (path) =>
       @isSelected = path == @entry.path
       return true
     @$on "removeFile", (entry) =>
-      @$root.logFolder "removing #{entry.path}"
+      @log "removing #{entry.path}"
       try
         @entry.files.$remove entry
-      setTimeout @$root?.resize,1
       if @isEmpty()
         @$dispatch "removeFolder", @entry if @?
       return false
     @$on "removeFolder", (entry) =>
-      try
-        @entry.folders.$remove entry
-      setTimeout @$root?.resize, 1
-      if @isEmpty()
-        @$dispatch "removeFolder", @entry if @?
+      if entry != @entry
+        try
+          @entry.folders.$remove entry
+        if @isEmpty()
+          @$dispatch "removeFolder", @entry if @?
       return false
-  destroyed: ->
-    @$root?.resize()
+  beforeDestroy: ->
+    @log "beforeDestroy",2
+    @disposable?.dispose()
 </script>

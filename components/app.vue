@@ -1,17 +1,19 @@
 // out: ../components_compiled/
 <template>
-
-    <ol class="full-menu list-tree has-collapsable-children" tabindex="-1"
-    v-on="mouseenter: hover, mouseleave: unhover"
-    >
-    <div v-class="hidden: !isHovered" class="save icon icon-bookmark" v-on="click: save">
-    </div>
-      <folder
-        v-repeat="entry: filesTree"
-        track-by="path"
-        >
-      </folder>
-    </ol>
+<div class="file-list opened-files" :class="{hidden:isHidden}">
+  <ol class="full-menu list-tree has-collapsable-children" tabindex="-1"
+  @mouseenter="hover" @mouseleave="unhover"
+  >
+  <div :class="{hidden: !isHovered}" class="save icon icon-bookmark" @click="save">
+  </div>
+    <folder
+      :entry="entry"
+      v-for="entry in filesTree"
+      track-by="path"
+      >
+    </folder>
+  </ol>
+</div>
 </template>
 
 <script lang="coffee">
@@ -81,6 +83,9 @@ addFolderToTree = (tree, splittedPath, index, path) ->
     element.folders = addFolderToTree element.folders, splittedPath,index+1, path
   return tree
 module.exports =
+  el: -> document.createElement("div")
+  components:
+    folder: require "./folder"
   data: ->
     filesTree: []
     colors: {}
@@ -88,6 +93,10 @@ module.exports =
     saving: false
     savedSettings: []
     isHovered:false
+    isHidden:false
+    disposables: null
+    logger: ->
+    log: ->
   methods:
     hover: (e) ->
       @isHovered = true
@@ -133,6 +142,7 @@ module.exports =
         @colors[path] = color
         @$broadcast "color", path
     redraw: ->
+      @log "redraw"
       @filesTree = []
       for path in settings
         @addFile path
@@ -156,6 +166,7 @@ module.exports =
         if @savedSettings.indexOf(path) == -1
           @$broadcast "close", path
   beforeCompile: ->
+    @log = @logger("app")
     sep = require("path").sep
     projectManager ?= require("./../lib/project-manager")
     abbreviate ?= require "abbreviate"
@@ -168,24 +179,52 @@ module.exports =
       @filesTree.$remove entry
       return false
   compiled: ->
+    {CompositeDisposable} = require 'atom'
+    @disposables = new CompositeDisposable
     for path in settings
       @addFile path
-    @addDisposable atom.workspace.observeTextEditors (editor) =>
+    @disposables.add atom.workspace.observeTextEditors (editor) =>
       if editor?.getPath?
         path = editor.getPath()
-        if path? and settings.indexOf(path) == -1
-          setTimeout (=> @addFile path), 350 # wait for double click
-          settings.push path
-    @addDisposable atom.commands.add 'atom-workspace',
+        if path?
+          pane = atom.workspace.paneForItem(editor)
+          if pane?
+            if pane.getPendingItem() != editor
+              if settings.indexOf(path) == -1
+                @addFile path
+                settings.push path
+            else
+              destroyed = false
+              disposable = pane.onItemDidTerminatePendingState (paneItem) =>
+                if paneItem == editor
+                  setTimeout ( =>
+                    unless destroyed
+                      console.log "terminated #{path}"
+                      if settings.indexOf(path) == -1
+                        @addFile path
+                        settings.push path
+                      disposable.dispose()
+                    ),100
+              disposable2 = editor.onDidDestroy ->
+                console.log "destroyed #{path}"
+                destroyed = true
+                disposable.dispose()
+                disposable2.dispose()
+
+
+    @disposables.add atom.commands.add 'atom-workspace',
       'opened-files:close-all-but-saved': @closeUnsaved
-    @addDisposable atom.config.onDidChange 'opened-files.asList', @redraw
-    @addDisposable atom.config.onDidChange 'opened-files.highlightOnHover', @redraw
-    @addDisposable atom.config.onDidChange 'opened-files.debug', @redraw
-    @addDisposable atom.config.onDidChange 'opened-files.mfpIdent', @redraw
-    @addDisposable atom.config.onDidChange 'opened-files.colorStyle', @redraw
+    @disposables.add atom.config.onDidChange 'opened-files.asList', @redraw
+    @disposables.add atom.config.onDidChange 'opened-files.debug', @redraw
+    @disposables.add atom.config.onDidChange 'opened-files.mfpIdent', @redraw
+    @disposables.add atom.commands.add 'atom-workspace',
+      'opened-files:toggle': => @isHidden = !@isHidden
     @log "compiled",2
   ready: ->
     @log "ready",2
   attached: ->
     @log "attached",2
+  beforeDestroy: ->
+    @log "destroying",2
+    @disposables?.dispose()
 </script>

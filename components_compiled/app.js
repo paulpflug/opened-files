@@ -1,4 +1,3 @@
-var __vue_template__ = "<ol class=\"full-menu list-tree has-collapsable-children\" tabindex=\"-1\" v-on=\"mouseenter: hover, mouseleave: unhover\">\n    <div v-class=\"hidden: !isHovered\" class=\"save icon icon-bookmark\" v-on=\"click: save\">\n    </div>\n      <folder v-repeat=\"entry: filesTree\" track-by=\"path\">\n      </folder>\n    </ol>";
 var abbreviate, addFileToTree, addFolderToTree, getElementFromTree, projectManager, sep, settings, sortByName, wherePath;
 
 wherePath = function(array, path) {
@@ -106,6 +105,12 @@ addFolderToTree = function(tree, splittedPath, index, path) {
 };
 
 module.exports = {
+  el: function() {
+    return document.createElement("div");
+  },
+  components: {
+    folder: require("./folder")
+  },
   data: function() {
     return {
       filesTree: [],
@@ -113,7 +118,11 @@ module.exports = {
       expanded: false,
       saving: false,
       savedSettings: [],
-      isHovered: false
+      isHovered: false,
+      isHidden: false,
+      disposables: null,
+      logger: function() {},
+      log: function() {}
     };
   },
   methods: {
@@ -175,6 +184,7 @@ module.exports = {
     },
     redraw: function() {
       var j, len, path, results;
+      this.log("redraw");
       this.filesTree = [];
       results = [];
       for (j = 0, len = settings.length; j < len; j++) {
@@ -222,6 +232,7 @@ module.exports = {
     }
   },
   beforeCompile: function() {
+    this.log = this.logger("app");
     sep = require("path").sep;
     if (projectManager == null) {
       projectManager = require("./../lib/project-manager");
@@ -245,32 +256,67 @@ module.exports = {
     })(this));
   },
   compiled: function() {
-    var j, len, path;
+    var CompositeDisposable, j, len, path;
+    CompositeDisposable = require('atom').CompositeDisposable;
+    this.disposables = new CompositeDisposable;
     for (j = 0, len = settings.length; j < len; j++) {
       path = settings[j];
       this.addFile(path);
     }
-    this.addDisposable(atom.workspace.observeTextEditors((function(_this) {
+    this.disposables.add(atom.workspace.observeTextEditors((function(_this) {
       return function(editor) {
+        var destroyed, disposable, disposable2, pane;
         if ((editor != null ? editor.getPath : void 0) != null) {
           path = editor.getPath();
-          if ((path != null) && settings.indexOf(path) === -1) {
-            setTimeout((function() {
-              return _this.addFile(path);
-            }), 350);
-            return settings.push(path);
+          if (path != null) {
+            pane = atom.workspace.paneForItem(editor);
+            if (pane != null) {
+              if (pane.getPendingItem() !== editor) {
+                if (settings.indexOf(path) === -1) {
+                  _this.addFile(path);
+                  return settings.push(path);
+                }
+              } else {
+                destroyed = false;
+                disposable = pane.onItemDidTerminatePendingState(function(paneItem) {
+                  if (paneItem === editor) {
+                    return setTimeout((function() {
+                      if (!destroyed) {
+                        console.log("terminated " + path);
+                        if (settings.indexOf(path) === -1) {
+                          _this.addFile(path);
+                          settings.push(path);
+                        }
+                        return disposable.dispose();
+                      }
+                    }), 100);
+                  }
+                });
+                return disposable2 = editor.onDidDestroy(function() {
+                  console.log("destroyed " + path);
+                  destroyed = true;
+                  disposable.dispose();
+                  return disposable2.dispose();
+                });
+              }
+            }
           }
         }
       };
     })(this)));
-    this.addDisposable(atom.commands.add('atom-workspace', {
+    this.disposables.add(atom.commands.add('atom-workspace', {
       'opened-files:close-all-but-saved': this.closeUnsaved
     }));
-    this.addDisposable(atom.config.onDidChange('opened-files.asList', this.redraw));
-    this.addDisposable(atom.config.onDidChange('opened-files.highlightOnHover', this.redraw));
-    this.addDisposable(atom.config.onDidChange('opened-files.debug', this.redraw));
-    this.addDisposable(atom.config.onDidChange('opened-files.mfpIdent', this.redraw));
-    this.addDisposable(atom.config.onDidChange('opened-files.colorStyle', this.redraw));
+    this.disposables.add(atom.config.onDidChange('opened-files.asList', this.redraw));
+    this.disposables.add(atom.config.onDidChange('opened-files.debug', this.redraw));
+    this.disposables.add(atom.config.onDidChange('opened-files.mfpIdent', this.redraw));
+    this.disposables.add(atom.commands.add('atom-workspace', {
+      'opened-files:toggle': (function(_this) {
+        return function() {
+          return _this.isHidden = !_this.isHidden;
+        };
+      })(this)
+    }));
     return this.log("compiled", 2);
   },
   ready: function() {
@@ -278,7 +324,13 @@ module.exports = {
   },
   attached: function() {
     return this.log("attached", 2);
+  },
+  beforeDestroy: function() {
+    var ref;
+    this.log("destroying", 2);
+    return (ref = this.disposables) != null ? ref.dispose() : void 0;
   }
 };
 
-;(typeof module.exports === "function"? module.exports.options: module.exports).template = __vue_template__;
+if (module.exports.__esModule) module.exports = module.exports.default
+;(typeof module.exports === "function"? module.exports.options: module.exports).template = "<div class=\"file-list opened-files\" :class={hidden:isHidden}><ol class=\"full-menu list-tree has-collapsable-children\" tabindex=-1 @mouseenter=hover @mouseleave=unhover><div :class=\"{hidden: !isHovered}\" class=\"save icon icon-bookmark\" @click=save></div><folder :entry=entry v-for=\"entry in filesTree\" track-by=path></folder></ol></div>"

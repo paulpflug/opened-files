@@ -1,9 +1,7 @@
-OpenedFiles = null
-log = null
-logger = null
-reloader = null
-compile = null
-
+log = () ->
+logger = () -> () ->
+Vue = null
+app = null
 pkgName = "opened-files"
 
 module.exports = new class Main
@@ -35,55 +33,43 @@ module.exports = new class Main
       default: "0"
       description: "length of the identifier, if set to 0 will use numbers instead"
 
-
   activate: ->
-    if atom.inDevMode()
-      setTimeout (->
-        reloaderSettings = pkg:pkgName,folders:["lib","styles","components"]
-        try
-          reloader ?= require("atom-package-reloader")(reloaderSettings)
-        ),500
-    unless log?
-      logger ?= require("atom-simple-logger")(pkg:pkgName)
-      log = logger("main")
+    activate = =>
       log "activating"
-    if atom.inDevMode()
-      log "compiling components"
-      try
-        compile ?= require("atom-vue-component-compiler")(packageName: pkgName)
-      if compile?
-        @compiling = compile ["app","file","folder"]
-    unless @openedFiles?
-      compileAndLoad = =>
-        load = =>
-          log "loading core"
-          try
-            OpenedFiles ?= require "./#{pkgName}"
-            @openedFiles = new OpenedFiles(logger)
-          catch e
-            if atom.inDevMode()
-              log "loading core failed"
-              log e.message if e?.message?
-            else
-              throw e
-          if @openedFiles?.comps?.app?
-            @openedFiles.comps.app.colorPicker = @colorPicker
-            @openedFiles.comps.app.changeColor = @changeColor
-            @cbHandler = @colorChangeCb? @openedFiles.comps.app.colorChangeCb
-        if @compiling?
-          @compiling.then load
-          .catch (e) -> throw e
-        else
-          load()
+      load = =>
+        log "loading core"
+        Vue = require "vue"
+        app = Vue.extend(require("../components_compiled/app.js"))
+        app = new app({
+          data:
+            logger: logger
+            colorPicker: @colorPicker
+            changeColor: @changeColor
+          })
+        @cbHandler = @colorChangeCb? app.colorChangeCb
+        tv = atom.packages.getActivePackage("tree-view")?.mainModule
+          .treeView.element
+        app.$before tv.firstChild if tv?
+        #if @openedFiles?.comps?.app?
+          #@openedFiles.comps.app.colorPicker = @colorPicker
+          #@openedFiles.comps.app.changeColor = @changeColor
+          #@cbHandler = @colorChangeCb? @openedFiles.comps.app.colorChangeCb
       if atom.packages.isPackageActive("tree-view")
         log "tree-view already loaded"
-        compileAndLoad()
+        load()
       else
         log "waiting for tree-view to load"
         @onceActivated = atom.packages.onDidActivatePackage (p) =>
           if p.name == "tree-view"
-            compileAndLoad()
+            load()
             @onceActivated.dispose()
+    if atom.inDevMode()
+      try
+        setTimeout activate,100
+      catch e
+        console.log e.message if e?.message?
+    else
+      setTimeout activate,100
 
   deactivate: ->
     log "deactivating"
@@ -94,25 +80,30 @@ module.exports = new class Main
     @changeColor = null
     @cbHandler?.dispose?()
     @colorChangeCb = null
+    app?.$destroy?(true)
     if atom.inDevMode()
-      reloader?.dispose()
-      reloader = null
       log = null
       logger = null
-      compile = null
-      OpenedFiles = null
+      Vue = null
 
+  consumeDebug: (debugSetup) ->
+    logger = debugSetup(pkg: pkgName)
+    log = logger("main")
+    log "consuming debug"
   consumeColorPicker: (colorPicker) =>
-    log? "consuming colorPicker"
+    log "consuming colorPicker"
     @colorPicker = colorPicker
-    @openedFiles?.comps?.app?.colorPicker = @colorPicker
+    app?.colorPicker = @colorPicker
   consumeChangeColor: (changeColor) =>
-    log? "consuming changeColor"
+    log "consuming changeColor"
     @changeColor = changeColor
-    @openedFiles?.comps?.app?.changeColor = @changeColor
+    app?.changeColor = @changeColor
   consumeColorChangeCb: (colorChangeCb) =>
-    log? "consuming colorChangeCb"
+    log "consuming colorChangeCb"
     @colorChangeCb = colorChangeCb
     @cbHandler?.dispose?()
-    if @openedFiles?.comps?.app?
-      @cbHandler = @colorChangeCb @openedFiles.comps.app.colorChangeCb
+    if app?
+      @cbHandler = @colorChangeCb app.colorChangeCb
+  consumeAutoreload: (reloader) ->
+    log "consuming consumeAutoreload"
+    reloader(pkg:pkgName,folders:["lib/","components_compiled/"])

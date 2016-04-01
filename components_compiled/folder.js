@@ -1,18 +1,28 @@
-var __vue_template__ = "<li class=\"directory list-nested-item\" v-on=\"mouseenter: hover, mouseleave: unhover,mouseover: highlight, mouseout: unhighlight\" v-class=\"\n      selected: isSelected,\n      collapsed: isCollapsed,\n      expanded: !isCollapsed,\n      of-highlight:isHighlight &amp;&amp; shouldHighlight\n    \">\n    <div class=\"header list-item folder\" v-on=\"click: onClick\">\n      <span class=\"name\" data-name=\"{{entry.name}}\" data-path=\"{{entry.path}}\">{{entry.name}}</span>\n\n      <span v-class=\"hidden: !isHovered\" class=\"icon icon-x\" v-on=\"click: close\">\n      </span>\n    </div>\n    <ol class=\"entries list-tree\" v-on=\"mouseover: unhighlight\">\n      <folder v-repeat=\"entry: entry.folders\" track-by=\"path\">\n      </folder>\n      <file v-repeat=\"entry: entry.files\" track-by=\"path\">\n      </file>\n    </ol>\n  </li>";
 var treeManager;
 
 treeManager = null;
 
 module.exports = {
+  name: "folder",
+  components: {
+    "file": require("./file")
+  },
   replace: true,
+  props: {
+    entry: {
+      type: Object
+    }
+  },
   data: function() {
     return {
+      disposable: null,
       isSelected: false,
       isCollapsed: false,
       isHovered: false,
       shouldHighlight: atom.config.get("opened-files.highlightOnHover"),
       isHighlight: false,
-      color: false
+      color: false,
+      log: function() {}
     };
   },
   methods: {
@@ -31,12 +41,12 @@ module.exports = {
       return this.isHighlight = false;
     },
     close: function(e) {
-      this.$root.logFolder("closing", 2);
+      this.log("closing", 2);
       e.stopPropagation();
       return this.$broadcast("close");
     },
     onClick: function(e) {
-      this.$root.logFolder("selecting", 2);
+      this.log("selecting", 2);
       this.$root.selected(this.entry.path);
       this.toggleFolder();
       return e.stopPropagation();
@@ -52,8 +62,20 @@ module.exports = {
       return this.entry.files.length === 0 && this.entry.folders.length === 0;
     }
   },
+  compiled: function() {
+    var CompositeDisposable;
+    this.log = this.$root.logger("file");
+    this.log("compiled", 2);
+    CompositeDisposable = require('atom').CompositeDisposable;
+    this.disposables = new CompositeDisposable;
+    return this.disposables.add(atom.config.onDidChange('opened-files.highlightOnHover', (function(_this) {
+      return function() {
+        return _this.shouldHighlight = atom.config.get("opened-files.highlightOnHover");
+      };
+    })(this)));
+  },
   created: function() {
-    this.$root.logFolder("created", 2);
+    this.log("created", 2);
     this.$on("selected", (function(_this) {
       return function(path) {
         _this.isSelected = path === _this.entry.path;
@@ -62,12 +84,10 @@ module.exports = {
     })(this));
     this.$on("removeFile", (function(_this) {
       return function(entry) {
-        var ref;
-        _this.$root.logFolder("removing " + entry.path);
+        _this.log("removing " + entry.path);
         try {
           _this.entry.files.$remove(entry);
-        } catch (_error) {}
-        setTimeout((ref = _this.$root) != null ? ref.resize : void 0, 1);
+        } catch (undefined) {}
         if (_this.isEmpty()) {
           if (_this != null) {
             _this.$dispatch("removeFolder", _this.entry);
@@ -78,24 +98,26 @@ module.exports = {
     })(this));
     return this.$on("removeFolder", (function(_this) {
       return function(entry) {
-        var ref;
-        try {
-          _this.entry.folders.$remove(entry);
-        } catch (_error) {}
-        setTimeout((ref = _this.$root) != null ? ref.resize : void 0, 1);
-        if (_this.isEmpty()) {
-          if (_this != null) {
-            _this.$dispatch("removeFolder", _this.entry);
+        if (entry !== _this.entry) {
+          try {
+            _this.entry.folders.$remove(entry);
+          } catch (undefined) {}
+          if (_this.isEmpty()) {
+            if (_this != null) {
+              _this.$dispatch("removeFolder", _this.entry);
+            }
           }
         }
         return false;
       };
     })(this));
   },
-  destroyed: function() {
+  beforeDestroy: function() {
     var ref;
-    return (ref = this.$root) != null ? ref.resize() : void 0;
+    this.log("beforeDestroy", 2);
+    return (ref = this.disposable) != null ? ref.dispose() : void 0;
   }
 };
 
-;(typeof module.exports === "function"? module.exports.options: module.exports).template = __vue_template__;
+if (module.exports.__esModule) module.exports = module.exports.default
+;(typeof module.exports === "function"? module.exports.options: module.exports).template = "<li class=\"directory list-nested-item\" @mouseenter=hover @mouseleave=unhover @mouseover=highlight @mouseout=unhighlight :class=\"{\n    selected: isSelected,\n    collapsed: isCollapsed,\n    expanded: !isCollapsed,\n    'of-highlight':isHighlight &amp;&amp; shouldHighlight\n  }\"><div class=\"header list-item folder\" @click=onClick><span class=name data-name={{entry.name}} data-path={{entry.path}}>{{entry.name}}</span> <span :class=\"{hidden: !isHovered}\" class=\"icon icon-x\" @click=close></span></div><ol class=\"entries list-tree\" @mouseover=unhighlight><folder :entry=entry v-for=\"entry in entry.folders\" track-by=path></folder><file :entry=entry v-for=\"entry in entry.files\" track-by=path></file></ol></li>"
