@@ -1,5 +1,3 @@
-# Currently broken! I will work it over once [#9165](https://github.com/atom/atom/issues/9165) got resolved
-
 # opened-files package
 
 A view of all opened files and other useful additions.
@@ -22,11 +20,7 @@ Tree:
  - Highlight tab on hover of file
  - Saves pinned tabs in project file (needs project-manager package)
  - works together with [color-tabs](https://atom.io/packages/color-tabs) and [color-picker-service](https://atom.io/packages/color-picker-service) to color individual tabs
-
-## Known issues
-
- - [double clicking on a preview file doesn't clear the preview](https://github.com/paulpflug/opened-files/issues/12)
- - [preview tabs shouldn't be added to the list of opened files](https://github.com/paulpflug/opened-files/issues/11)
+ - preview tabs are not added to the list of opened files
 
 ## Discuss
 
