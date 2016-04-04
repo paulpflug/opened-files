@@ -51,7 +51,7 @@ module.exports = new class Main
         if tv?
           app.$before tv.firstChild
         else
-          throw new Error "tree-view not found, make sure the tree-view package is enabled. CTRL+ALT+R to reload"
+          atom.notifications.addError "tree-view not found, make sure the tree-view package is enabled. CTRL+ALT+R to reload"
         #if @openedFiles?.comps?.app?
           #@openedFiles.comps.app.colorPicker = @colorPicker
           #@openedFiles.comps.app.changeColor = @changeColor
