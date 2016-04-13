@@ -176,7 +176,8 @@ module.exports =
     @log "beforeCompile",2
   created: ->
     @$on "removeFolder", (entry) =>
-      @filesTree.$remove entry
+      unless atom.config.get("opened-files.asList")
+        @filesTree.$remove entry
       return false
   compiled: ->
     {CompositeDisposable} = require 'atom'

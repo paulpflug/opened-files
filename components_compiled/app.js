@@ -250,7 +250,9 @@ module.exports = {
   created: function() {
     return this.$on("removeFolder", (function(_this) {
       return function(entry) {
-        _this.filesTree.$remove(entry);
+        if (!atom.config.get("opened-files.asList")) {
+          _this.filesTree.$remove(entry);
+        }
         return false;
       };
     })(this));
