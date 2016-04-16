@@ -125,6 +125,14 @@ module.exports = {
       log: function() {}
     };
   },
+  events: {
+    removeFolder: function(entry) {
+      if (!atom.config.get("opened-files.asList")) {
+        this.filesTree.$remove(entry);
+      }
+      return false;
+    }
+  },
   methods: {
     hover: function(e) {
       return this.isHovered = true;
@@ -240,25 +248,19 @@ module.exports = {
     if (abbreviate == null) {
       abbreviate = require("abbreviate");
     }
-    settings = projectManager.getProjectSetting();
-    if (!Array.isArray(settings)) {
+    if (atom.config.get("opened-files.removeOnClose")) {
       settings = [];
+    } else {
+      settings = projectManager.getProjectSetting();
+      if (!Array.isArray(settings)) {
+        settings = [];
+      }
+      this.savedSettings = settings.slice();
     }
-    this.savedSettings = settings.slice();
     return this.log("beforeCompile", 2);
   },
-  created: function() {
-    return this.$on("removeFolder", (function(_this) {
-      return function(entry) {
-        if (!atom.config.get("opened-files.asList")) {
-          _this.filesTree.$remove(entry);
-        }
-        return false;
-      };
-    })(this));
-  },
   compiled: function() {
-    var CompositeDisposable, j, len, path;
+    var CompositeDisposable, closeListener, j, len, path, setupCloseListener;
     CompositeDisposable = require('atom').CompositeDisposable;
     this.disposables = new CompositeDisposable;
     for (j = 0, len = settings.length; j < len; j++) {
@@ -284,7 +286,6 @@ module.exports = {
                   if (paneItem === editor) {
                     return setTimeout((function() {
                       if (!destroyed) {
-                        console.log("terminated " + path);
                         if (settings.indexOf(path) === -1) {
                           _this.addFile(path);
                           settings.push(path);
@@ -295,7 +296,6 @@ module.exports = {
                   }
                 });
                 return disposable2 = editor.onDidDestroy(function() {
-                  console.log("destroyed " + path);
                   destroyed = true;
                   disposable.dispose();
                   return disposable2.dispose();
@@ -306,12 +306,88 @@ module.exports = {
         }
       };
     })(this)));
+    setupCloseListener = (function(_this) {
+      return function() {
+        var disposable;
+        disposable = atom.workspace.onDidDestroyPaneItem(function() {
+          var editor, file, k, l, len1, len2, len3, m, openedFiles, pane, ref, remove;
+          openedFiles = [];
+          ref = atom.workspace.getTextEditors();
+          for (k = 0, len1 = ref.length; k < len1; k++) {
+            editor = ref[k];
+            if ((editor != null ? editor.getPath : void 0) != null) {
+              path = editor.getPath();
+              if (path != null) {
+                pane = atom.workspace.paneForItem(editor);
+                if (pane != null) {
+                  if (pane.getPendingItem() !== editor) {
+                    if (openedFiles.indexOf(path) === -1) {
+                      openedFiles.push(path);
+                    }
+                  }
+                }
+              }
+            }
+          }
+          remove = [];
+          for (l = 0, len2 = settings.length; l < len2; l++) {
+            file = settings[l];
+            if (openedFiles.indexOf(file) === -1) {
+              remove.push(file);
+            }
+          }
+          if (remove.length > 0) {
+            for (m = 0, len3 = remove.length; m < len3; m++) {
+              file = remove[m];
+              settings.splice(settings.indexOf(file), 1);
+            }
+            return _this.redraw();
+          }
+        });
+        _this.disposables.add(disposable);
+        return disposable;
+      };
+    })(this);
+    if (atom.config.get("opened-files.removeOnClose")) {
+      closeListener = setupCloseListener();
+    }
     this.disposables.add(atom.commands.add('atom-workspace', {
       'opened-files:close-all-but-saved': this.closeUnsaved
     }));
     this.disposables.add(atom.config.onDidChange('opened-files.asList', this.redraw));
     this.disposables.add(atom.config.onDidChange('opened-files.debug', this.redraw));
     this.disposables.add(atom.config.onDidChange('opened-files.mfpIdent', this.redraw));
+    this.disposables.add(atom.config.onDidChange('opened-files.removeOnClose', (function(_this) {
+      return function(arg) {
+        var editor, k, len1, newValue, pane, ref;
+        newValue = arg.newValue;
+        if (newValue) {
+          settings = [];
+          ref = atom.workspace.getTextEditors();
+          for (k = 0, len1 = ref.length; k < len1; k++) {
+            editor = ref[k];
+            if ((editor != null ? editor.getPath : void 0) != null) {
+              path = editor.getPath();
+              if (path != null) {
+                pane = atom.workspace.paneForItem(editor);
+                if (pane != null) {
+                  if (pane.getPendingItem() !== editor) {
+                    if (settings.indexOf(path) === -1) {
+                      _this.addFile(path);
+                      settings.push(path);
+                    }
+                  }
+                }
+              }
+            }
+          }
+          _this.redraw();
+          return closeListener = setupCloseListener();
+        } else {
+          return closeListener.dispose();
+        }
+      };
+    })(this)));
     this.disposables.add(atom.commands.add('atom-workspace', {
       'opened-files:toggle': (function(_this) {
         return function() {

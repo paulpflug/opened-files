@@ -19,7 +19,7 @@ module.exports = new class Main
       default: true
     colorStyle:
       title: "Color style"
-      description: "works only in conjunction with the color-tabs package"
+      description: "Works only in conjunction with the color-tabs package"
       type: "string"
       default: "gradient"
       enum: ["gradient","border","solid"]
@@ -32,6 +32,11 @@ module.exports = new class Main
       type: "integer"
       default: "0"
       description: "length of the identifier, if set to 0 will use numbers instead"
+    removeOnClose:
+      title: "Remove entries on close"
+      type: "boolean"
+      default: false
+      description: "Should entries be removed when all instances of the file are closed?"
 
   activate: ->
     activate = =>

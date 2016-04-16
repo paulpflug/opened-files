@@ -83,9 +83,11 @@ addFolderToTree = (tree, splittedPath, index, path) ->
     element.folders = addFolderToTree element.folders, splittedPath,index+1, path
   return tree
 module.exports =
+
   el: -> document.createElement("div")
   components:
     folder: require "./folder"
+
   data: ->
     filesTree: []
     colors: {}
@@ -97,6 +99,13 @@ module.exports =
     disposables: null
     logger: ->
     log: ->
+
+  events:
+    removeFolder: (entry) ->
+      unless atom.config.get("opened-files.asList")
+        @filesTree.$remove entry
+      return false
+
   methods:
     hover: (e) ->
       @isHovered = true
@@ -165,20 +174,20 @@ module.exports =
       for path in settings
         if @savedSettings.indexOf(path) == -1
           @$broadcast "close", path
+
   beforeCompile: ->
     @log = @logger("app")
     sep = require("path").sep
     projectManager ?= require("./../lib/project-manager")
     abbreviate ?= require "abbreviate"
-    settings = projectManager.getProjectSetting()
-    settings = [] unless Array.isArray settings
-    @savedSettings = settings.slice()
+    if atom.config.get("opened-files.removeOnClose")
+      settings = []
+    else
+      settings = projectManager.getProjectSetting()
+      settings = [] unless Array.isArray settings
+      @savedSettings = settings.slice()
     @log "beforeCompile",2
-  created: ->
-    @$on "removeFolder", (entry) =>
-      unless atom.config.get("opened-files.asList")
-        @filesTree.$remove entry
-      return false
+
   compiled: ->
     {CompositeDisposable} = require 'atom'
     @disposables = new CompositeDisposable
@@ -200,24 +209,61 @@ module.exports =
                 if paneItem == editor
                   setTimeout ( =>
                     unless destroyed
-                      console.log "terminated #{path}"
                       if settings.indexOf(path) == -1
                         @addFile path
                         settings.push path
                       disposable.dispose()
                     ),100
               disposable2 = editor.onDidDestroy ->
-                console.log "destroyed #{path}"
                 destroyed = true
                 disposable.dispose()
                 disposable2.dispose()
-
-
+    setupCloseListener = =>
+      disposable = atom.workspace.onDidDestroyPaneItem =>
+        openedFiles = []
+        for editor in atom.workspace.getTextEditors()
+          if editor?.getPath?
+            path = editor.getPath()
+            if path?
+              pane = atom.workspace.paneForItem(editor)
+              if pane?
+                if pane.getPendingItem() != editor
+                  if openedFiles.indexOf(path) == -1
+                    openedFiles.push path
+        remove = []
+        for file in settings
+          if openedFiles.indexOf(file) == -1
+            remove.push file
+        if remove.length > 0
+          for file in remove
+            settings.splice(settings.indexOf(file),1)
+          @redraw()
+      @disposables.add disposable
+      return disposable
+    if atom.config.get("opened-files.removeOnClose")
+      closeListener = setupCloseListener()
     @disposables.add atom.commands.add 'atom-workspace',
       'opened-files:close-all-but-saved': @closeUnsaved
     @disposables.add atom.config.onDidChange 'opened-files.asList', @redraw
     @disposables.add atom.config.onDidChange 'opened-files.debug', @redraw
     @disposables.add atom.config.onDidChange 'opened-files.mfpIdent', @redraw
+    @disposables.add atom.config.onDidChange 'opened-files.removeOnClose', ({newValue}) =>
+      if newValue
+        settings = []
+        for editor in atom.workspace.getTextEditors()
+          if editor?.getPath?
+            path = editor.getPath()
+            if path?
+              pane = atom.workspace.paneForItem(editor)
+              if pane?
+                if pane.getPendingItem() != editor
+                  if settings.indexOf(path) == -1
+                    @addFile path
+                    settings.push path
+        @redraw()
+        closeListener = setupCloseListener()
+      else
+        closeListener.dispose()
     @disposables.add atom.commands.add 'atom-workspace',
       'opened-files:toggle': => @isHidden = !@isHidden
     @log "compiled",2
